@@ -15,3 +15,5 @@ Convert the script of the Scratch Project to a C-LIKE programming language.
    $scratch->dumpCodeInC();			//输出结果
    
    file_put_contents("sc.txt",serialize($scratch->codeInC));	//数组结果写入文件
+
+此程序为 https://github.com/LuciferStarSS/Scratch3.0_for_class 的一个扩展功能。
