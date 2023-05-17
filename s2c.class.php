@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 set_time_limit(3);
 /*
 1.加载json数据
@@ -256,7 +256,7 @@ class Scratch3ToC
             {
                $this->convertFromRest($Block->{"inputs"}->{"SUBSTACK"}->{"block"});
             }
-            $this->codeInC[]= $this->padding()."while (!";
+            $this->codeInC[]= $this->padding()."while( !";
             $this->convertCode( $Block->{"inputs"}->{"CONDITION"}->{"block"});
             $this->codeInC[]= ");\n";
             break;
@@ -409,6 +409,22 @@ class Scratch3ToC
                $this->codeInC[]= $Block->{"fields"}->{"VARIABLE"}->{"value"};
             break;
 
+         case "data_setvariableto"://将变量设为
+            //var_dump($Block);
+            if($Block->{"parent"}!=NULL)
+               $this->codeInC[]= $this->padding().$Block->{"fields"}->{"VARIABLE"}->{"value"};
+               $this->codeInC[]=" = ";
+               $this->convertCode($Block->{"inputs"}->{"VALUE"}->{"block"});
+               $this->codeInC[]= " ;\n";
+            break;
+
+         case "data_changevariableby"://将变量增加
+            if($Block->{"parent"}!=NULL)
+               $this->codeInC[]= $this->padding().$Block->{"fields"}->{"VARIABLE"}->{"value"};
+               $this->codeInC[]=" += ";
+               $this->convertCode($Block->{"inputs"}->{"VALUE"}->{"block"});
+               $this->codeInC[]= " ;\n";
+            break;
 
 
          /**************************未定义**************************/
@@ -493,11 +509,11 @@ class Scratch3ToC
    {
       if( isset($this->Variables->{"GV"}) && count((array)$this->Variables->{"GV"})>0)
       {
-         $this->codeInC[]= "//适用于所有角色的变量：\n";
+         $this->codeInC[]= "//适用于所有角色的变量\n";
 
          foreach($this->Variables->{"GV"} as $VID=>$arr)
          {
-             $this->codeInC[]="int ".$arr->{"name"}."=".$arr->{"value"}.";\n";
+             $this->codeInC[]="int ".$arr->{"name"}." = ".$arr->{"value"}.";\n";
          }
          $this->codeInC[]="\n";
       }
@@ -508,7 +524,7 @@ class Scratch3ToC
 
          foreach($this->Variables->{"CV"} as $VID=>$arr)
          {
-             $this->codeInC[]="int ".$arr->{"name"}."=".$arr->{"value"}.";\n";
+             $this->codeInC[]="int ".$arr->{"name"}." = ".$arr->{"value"}.";\n";
          }
          $this->codeInC[]="\n";
       }
