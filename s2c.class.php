@@ -210,7 +210,7 @@ class Scratch3ToC
             else
             {
                $this->codeInC[]=$Block->{"fields"}->{"OPERATOR"}->{"value"};		//函数名
-               $this->codeInC[]="(";
+               $this->codeInC[]="( ";
                $this->convertCode($Block->{"inputs"}->{"NUM"}->{"block"});
                $this->codeInC[]=" ) ";
             }
@@ -378,6 +378,16 @@ class Scratch3ToC
             $this->codeInC[]= "\" );\n";
             break;
 
+         case "motion_glidesecstoxy":		//n秒内滑行到xy
+            $this->codeInC[]= $this->padding()."glideToXY( ";
+            $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"SECS"}->{"block"});
+            $this->codeInC[]= " , ";
+            $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"X"}->{"block"});
+            $this->codeInC[]= " , ";
+            $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"Y"}->{"block"});
+            $this->codeInC[]= " );\n";
+
+            break;
 
          /**************************MATH运算**************************/
 
@@ -387,6 +397,11 @@ class Scratch3ToC
             break;
 
          case "math_number":			//加减乘除中的普通数字参数
+            if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。
+               $this->codeInC[]= $Block->{"fields"}->{"NUM"}->{"value"};
+            break;
+
+         case "math_angle":			//旋转角度的普通数字参数
             if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。
                $this->codeInC[]= $Block->{"fields"}->{"NUM"}->{"value"};
             break;
