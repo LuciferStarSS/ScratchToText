@@ -80,24 +80,24 @@ class Scratch3ToC
 
          case "event_whenflagclicked":
             $this->codeInC[]= "//当绿旗被点击\n";
-            $this->codeInC[]= "void whenFlagClicked(){\n";
+            $this->codeInC[]= "void ".$Block->{"opcode"}."(){\n";
             $this->nLeftPadding++;
             break;
 
          case "event_whenkeypressed":
-            $this->codeInC[]= "//当某键被按下\nvoid whenKeyPressed(\"";
+            $this->codeInC[]= "//当某键被按下\nvoid ".$Block->{"opcode"}."(\"";
             $this->codeInC[]= $Block->{"fields"}->{"KEY_OPTION"}->{"value"};
             $this->codeInC[]= "\"){\n";
             $this->nLeftPadding++;
             break;
 
          case "event_whenthisspriteclicked":
-            $this->codeInC[]= "//当角色被点击\nvoid whenThisSpriteClicked(){\n";
+            $this->codeInC[]= "//当角色被点击\nvoid ".$Block->{"opcode"}."(){\n";
             $this->nLeftPadding++;
             break;
 
          case "event_whenbroadcastreceived":
-            $this->codeInC[]= "//当接收到广播\nvoid whenBroadcastReceived(\"";
+            $this->codeInC[]= "//当接收到广播\nvoid ".$Block->{"opcode"}."(\"";
             $this->codeInC[]= $Block->{"fields"}->{"BROADCAST_OPTION"}->{"value"};
             $this->codeInC[]= "\"){\n";
             $this->nLeftPadding++;
@@ -222,7 +222,7 @@ class Scratch3ToC
 
          case "control_wait":			//等待n秒
             //var_dump($Block);
-            $this->codeInC[]= $this->padding()."waitSeconds(";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."(";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"DURATION"}->{"block"});
             $this->codeInC[]= ");\n";
             break;
@@ -297,7 +297,7 @@ class Scratch3ToC
             break;
 
          case "control_stop":			//停止
-            $this->codeInC[]= $this->padding()."stopScript( \"";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( \"";
             $this->codeInC[]= $Block->{"fields"}->{"STOP_OPTION"}->{"value"};
             $this->codeInC[]= "\" );\n";
             break;
@@ -307,25 +307,25 @@ class Scratch3ToC
          //这里要处理变量问题。
 
          case "motion_movesteps":		//移动n步
-            $this->codeInC[]= $this->padding()."moveSteps( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"STEPS"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_turnright":		//右转n度
-            $this->codeInC[]= $this->padding()."turnRight( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"DEGREES"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_turnleft":		//左转n度
-            $this->codeInC[]= $this->padding()."turnLeft( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"DEGREES"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_gotoxy":			//移到xy
-            $this->codeInC[]= $this->padding()."gotoXY( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"X"}->{"block"});
             $this->codeInC[]= " , ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"Y"}->{"block"});
@@ -333,53 +333,53 @@ class Scratch3ToC
             break;
 
          case "motion_pointindirection":	//移到“随机位置/鼠标指针”
-            $this->codeInC[]= $this->padding()."pointInDirection( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"DIRECTION"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_pointtowards":		//面向n度方向
-            $this->codeInC[]= $this->padding()."pointInDirection( \"";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( \"";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"TOWARDS"}->{"block"});
             $this->codeInC[]= "\" );\n";
             break;
 
          case "motion_changexby":		//将x坐标增加
-            $this->codeInC[]= $this->padding()."changeXBy( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"DX"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_changeyby":		//将y坐标增加
-            $this->codeInC[]= $this->padding()."changeYBy( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"DY"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_setx":			//将x坐标设为
-            $this->codeInC[]= $this->padding()."setX( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"X"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_sety":			//将y坐标设为
-            $this->codeInC[]= $this->padding()."setY( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"Y"}->{"block"});
             $this->codeInC[]= " );\n";
             break;
 
          case "motion_ifonedgebounce":		//碰到边缘就反弹
-            $this->codeInC[]= $this->padding()."bounceOnEdge( );\n";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( );\n";
             break;
 
          case "motion_setrotationstyle":	//将旋转方式设为“左右翻转/不可旋转/任意旋转”
-            $this->codeInC[]= $this->padding()."setRotationStyle( \"";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( \"";
             $this->codeInC[]= $Block->{"fields"}->{"STYLE"}->{"value"};
             $this->codeInC[]= "\" );\n";
             break;
 
          case "motion_glidesecstoxy":		//n秒内滑行到xy
-            $this->codeInC[]= $this->padding()."glideToXY( ";
+            $this->codeInC[]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"SECS"}->{"block"});
             $this->codeInC[]= " , ";
             $this->codeInC[]= $this->convertCode($Block->{"inputs"}->{"X"}->{"block"});
