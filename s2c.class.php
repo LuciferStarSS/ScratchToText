@@ -393,7 +393,7 @@ class Scratch3ToC
 
          case "text":				//大于小于等于中的普通文本参数
             if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。
-              $this->codeInC[]= $Block->{"fields"}->{"TEXT"}->{"value"};
+              $this->codeInC[]= is_numeric($Block->{"fields"}->{"TEXT"}->{"value"})?$Block->{"fields"}->{"TEXT"}->{"value"}:"\"".$Block->{"fields"}->{"TEXT"}->{"value"}."\"";
             break;
 
          case "math_number":			//加减乘除中的普通数字参数
@@ -421,21 +421,21 @@ class Scratch3ToC
 
          case "data_variable"://变量
             if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。
-               $this->codeInC[]= $Block->{"fields"}->{"VARIABLE"}->{"value"};
+               $this->codeInC[]= "var_".$Block->{"fields"}->{"VARIABLE"}->{"value"};
             break;
 
          case "data_setvariableto"://将变量设为
             //var_dump($Block);
-            if($Block->{"parent"}!=NULL)
-               $this->codeInC[]= $this->padding().$Block->{"fields"}->{"VARIABLE"}->{"value"};
+            //if($Block->{"parent"}!=NULL)
+               $this->codeInC[]= $this->padding()."var_".$Block->{"fields"}->{"VARIABLE"}->{"value"};
                $this->codeInC[]=" = ";
                $this->convertCode($Block->{"inputs"}->{"VALUE"}->{"block"});
                $this->codeInC[]= " ;\n";
             break;
 
          case "data_changevariableby"://将变量增加
-            if($Block->{"parent"}!=NULL)
-               $this->codeInC[]= $this->padding().$Block->{"fields"}->{"VARIABLE"}->{"value"};
+            //if($Block->{"parent"}!=NULL)
+               $this->codeInC[]= $this->padding()."var_".$Block->{"fields"}->{"VARIABLE"}->{"value"};
                $this->codeInC[]=" += ";
                $this->convertCode($Block->{"inputs"}->{"VALUE"}->{"block"});
                $this->codeInC[]= " ;\n";
