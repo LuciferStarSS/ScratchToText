@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 //set_time_limit(3);
 /*
 1.加载json数据
@@ -502,7 +502,7 @@ class Scratch3ToC
             //print_r($Block);
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"BROADCAST_INPUT"}->{"block"});
-            $this->codeInC[$this->currentType][]= " );";
+            $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "event_broadcast_menu":
@@ -726,6 +726,7 @@ class Scratch3ToC
 
          /**************************变量**************************/
 
+            /**************************变量**************************/
          case "data_variable"://变量
             if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。
                $this->codeInC[$this->currentType][]= "var_".$Block->{"fields"}->{"VARIABLE"}->{"value"};
@@ -752,6 +753,8 @@ class Scratch3ToC
             //}
             break;
 
+            /**************************列表**************************/
+
          case "data_addtolist"://列表中增加值
             //print_r($Block);
             $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
@@ -760,13 +763,70 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]= " );\n";
             break;
 
+         case "data_deleteoflist"://删除列表内某个数据
+            //print_r($Block);
+            $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=".delete(";
+            $this->convertCode($Block->{"inputs"}->{"INDEX"}->{"block"});
+            $this->codeInC[$this->currentType][]= ");\n";
+            break;
 
-         case "data_deletealloflist"://删除列表内数据
+         case "data_deletealloflist"://清空列表数据
             //print_r($Block);
             $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
             $this->codeInC[$this->currentType][]=".removeAll(";
             //$this->convertCode($Block->{"inputs"}->{"ITEM"}->{"block"});
             $this->codeInC[$this->currentType][]= ");\n";
+            break;
+
+         case "data_insertatlist"://往列表某项前中插入数据
+            //print_r($Block);
+            $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=".insert(";
+            $this->convertCode($Block->{"inputs"}->{"INDEX"}->{"block"});
+            $this->codeInC[$this->currentType][]=",";
+            $this->convertCode($Block->{"inputs"}->{"ITEM"}->{"block"});
+            $this->codeInC[$this->currentType][]= ");\n";
+            break;
+
+         case "data_replaceitemoflist"://替换列表中某项数据
+            //print_r($Block);
+            $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=".repalce(";
+            $this->convertCode($Block->{"inputs"}->{"INDEX"}->{"block"});
+            $this->codeInC[$this->currentType][]=",";
+            $this->convertCode($Block->{"inputs"}->{"ITEM"}->{"block"});
+            $this->codeInC[$this->currentType][]= ");\n";
+            break;
+
+         case "data_itemoflist"://取列表中某项的值
+            //print_r($Block);
+            $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=".getAt(";
+            $this->convertCode($Block->{"inputs"}->{"INDEX"}->{"block"});
+            $this->codeInC[$this->currentType][]=")";
+            break;
+
+         case "data_itemnumoflist"://列表中某数据第一次出现的编号
+            //print_r($Block);
+            $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=".indexOf(";
+            $this->convertCode($Block->{"inputs"}->{"ITEM"}->{"block"});
+            $this->codeInC[$this->currentType][]=")";
+            break;
+
+         case "data_lengthoflist"://取列表项目数
+            //print_r($Block);
+            $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=".length()";
+            break;
+
+         case "data_listcontainsitem"://列表中是否包含某数
+            //print_r($Block);
+            $this->codeInC[$this->currentType][]= $this->padding()."list_".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=".exist(";
+            $this->convertCode($Block->{"inputs"}->{"ITEM"}->{"block"});
+            $this->codeInC[$this->currentType][]=")";
             break;
 
 
@@ -960,7 +1020,9 @@ class Scratch3ToC
          {
              //print_r($arr);
              if($arr->{"type"}!="list")
-             $this->codeInC[$this->currentType][]="int var_".$arr->{"name"}." = ".$arr->{"value"}.";\n";
+                $this->codeInC[$this->currentType][]="int var_".$arr->{"name"}." = ".$arr->{"value"}.";\n";
+             else
+                $this->codeInC[$this->currentType][]="int list_".$arr->{"name"}." = [];\n";
          }
          //$this->codeInC[$this->currentType][]="\n";
       }
@@ -973,7 +1035,10 @@ class Scratch3ToC
          foreach($this->Variables->{"CV"} as $VID=>$arr)
          {
              //print_r($arr);
-             $this->codeInC[$this->currentType][]="int var_".$arr->{"name"}." = ".$arr->{"value"}.";\n";
+             if($arr->{"type"}!="list")
+                $this->codeInC[$this->currentType][]="int var_".$arr->{"name"}." = ".$arr->{"value"}.";\n";
+             else
+                $this->codeInC[$this->currentType][]="int list_".$arr->{"name"}." = [];\n";
          }
          //$this->codeInC[$this->currentType][]="\n";
       }
