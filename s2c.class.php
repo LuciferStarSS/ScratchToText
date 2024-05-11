@@ -345,7 +345,11 @@ class Scratch3ToC
             }
 
             $this->codeInC[$this->currentType][]= $this->padding()."while( !";
-            $this->convertCode( $Block->{"inputs"}->{"CONDITION"}->{"block"});
+
+            if(isset($Block->{"inputs"}->{"CONDITION"}) && $Block->{"inputs"}->{"CONDITION"}->{"block"}!=NULL)	//检测包含的子积木块
+            {
+               $this->convertCode( $Block->{"inputs"}->{"CONDITION"}->{"block"});
+            }
             $this->codeInC[$this->currentType][]= ");\n";
             break;
 
@@ -402,7 +406,11 @@ class Scratch3ToC
          case "control_wait_until":						//等待直到
             $this->codeInC[$this->currentType][]= $this->padding()."do{}\n";
             $this->codeInC[$this->currentType][]= $this->padding()."while (!";
-            $this->convertCode( $Block->{"inputs"}->{"CONDITION"}->{"block"});
+
+            if(isset($Block->{"inputs"}->{"CONDITION"}) && $Block->{"inputs"}->{"CONDITION"}->{"block"}!=NULL)	//检测包含的子积木块
+            {
+               $this->convertCode( $Block->{"inputs"}->{"CONDITION"}->{"block"});
+            }
             $this->codeInC[$this->currentType][]= ");\n";
             break;
 
