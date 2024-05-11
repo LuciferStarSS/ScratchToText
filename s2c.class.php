@@ -104,12 +104,11 @@ class Scratch3ToC
             $this->nLeftPadding++;
             break;
 
-         case "chattingroom_whenChatMessageComes":
-            $this->codeInC[$this->currentType][]= "//当接收到广播\n".$Block->{"opcode"}."(){\n";
+         case "event_whenthisspriteclicked":
+            $this->codeInC[$this->currentType][]= "//当角色被点击\n".$Block->{"opcode"}."(){\n";
             $this->nLeftPadding++;
-
-
             break;
+
          case "event_whenbroadcastreceived":
             $this->codeInC[$this->currentType][]= "//当接收到广播\n".$Block->{"opcode"}."(\"";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"BROADCAST_OPTION"}->{"value"};
