@@ -35,7 +35,8 @@ class Scratch3ToC
       "event_whengreaterthan"=>1,
       "event_whenbroadcastreceived"=>1,
       "control_start_as_clone"=>1,
-      "event_whenstageclicked"=>1
+      "event_whenstageclicked"=>1,
+      "chattingroom_whenChatMessageComes"=>1
    );
 
    private $arrBlockID=NULL;				//积木清单
@@ -103,11 +104,12 @@ class Scratch3ToC
             $this->nLeftPadding++;
             break;
 
-         case "event_whenthisspriteclicked":
-            $this->codeInC[$this->currentType][]= "//当角色被点击\n".$Block->{"opcode"}."(){\n";
+         case "chattingroom_whenChatMessageComes":
+            $this->codeInC[$this->currentType][]= "//当接收到广播\n".$Block->{"opcode"}."(){\n";
             $this->nLeftPadding++;
-            break;
 
+
+            break;
          case "event_whenbroadcastreceived":
             $this->codeInC[$this->currentType][]= "//当接收到广播\n".$Block->{"opcode"}."(\"";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"BROADCAST_OPTION"}->{"value"};
@@ -911,43 +913,37 @@ class Scratch3ToC
 //运算
 
 //互动工具
-         case "chattingroom_sendMsgTo":		//聊天室发送消息
-            //print_r($Block);
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( \"";
+         case "chattingroom_sendMsgTo":										//聊天室发送消息
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"USER"}->{"block"});
-            $this->codeInC[$this->currentType][] = "\" ,\"";
+            $this->codeInC[$this->currentType][] = " ,";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"MSG"}->{"block"});
-            $this->codeInC[$this->currentType][] = "\" );\n";
+            $this->codeInC[$this->currentType][] = " );\n";
          break;
 
-         case "chattingroom_menu_userlist":	//聊天室用户列表
-            //print_r($Block);
-            $this->codeInC[$this->currentType][] = $Block->{"fields"}->{"userlist"}->{"value"};
+         case "chattingroom_sendReport":		//聊天室发送消息
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"STEPS"}->{"block"});
+            $this->codeInC[$this->currentType][] = " , ";
+            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"LEFT"}->{"block"});
+            $this->codeInC[$this->currentType][] = " , ";
+            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"RIGHT"}->{"block"});
+            $this->codeInC[$this->currentType][] = " , ";
+            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"TIME"}->{"block"});
+            $this->codeInC[$this->currentType][] = " );\n";
+         break;
+
+         case "chattingroom_menu_userlist":									//聊天室用户列表
+            $this->codeInC[$this->currentType][] = "\"".$Block->{"fields"}->{"userlist"}->{"value"}."\"";
             break;
 
-         case "chattingroom_lastReceivedMsg":	//聊天室接收到的最近一条消息
-            //print_r($Block);
+         case "chattingroom_lastReceivedMsg":									//聊天室接收到的最近一条消息
             $this->codeInC[$this->currentType][] = $Block->{"opcode"}."()";
             break;
 
-         case "chattingroom_unreadMsgLength":	//聊天室接收到的最近一条消息
-            //print_r($Block);
+         case "chattingroom_unreadMsgLength":									//聊天室接收到的最近一条消息
             $this->codeInC[$this->currentType][] = "VAR_".$Block->{"opcode"};
             break;
-
-
-         case "chattingroom_sendReport":		//聊天室发送消息
-            //print_r($Block);
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"STEPS"}->{"block"});
-            $this->codeInC[$this->currentType][] = "\" ,\"";
-            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"LEFT"}->{"block"});
-            $this->codeInC[$this->currentType][] = "\" ,\"";
-            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"RIGHT"}->{"block"});
-            $this->codeInC[$this->currentType][] = "\" ,\"";
-            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"TIME"}->{"block"});
-            $this->codeInC[$this->currentType][] = "\" );\n";
-         break;
 
 //互动工具
 
