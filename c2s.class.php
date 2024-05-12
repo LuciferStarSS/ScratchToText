@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 //set_time_limit(3);
 /*
 1.加载json数据
@@ -28,7 +28,7 @@ function uid()			//生成20字节的UID(Scratch3.0官方算法)
 ********************************************/
 class CToScratch3
 {
-   private  $rpn	 = NULL;						//处理四则混合运算的逆波兰类对象
+   private  $rpn_exp	 = NULL;						//处理四则混合运算的逆波兰类对象
    private  $arrCODEDATA = Array(NULL,NULL,NULL,NULL);				//客户端传过来的代码数据
    private  $Blockly	 = Array(Array(),Array());				//代码经解析后生成的积木块数据
    private  $nType	 = 0;							//在对堆栈进行操作时用以区分积木块归属类型：有/无事件触发的积木
@@ -39,7 +39,7 @@ class CToScratch3
    {
       $this->arrCODEDATA =unserialize($strCODEDATA);				//处理由serialize处理数组后生成的字符串文本，还原成数组
 
-      $this->rpn = new RPN();							//处理四则混合运算的逆波兰类进行初始化
+      $this->rpn_exp = new RPN_EXPRESSION();							//处理四则混合运算的逆波兰类进行初始化
 
       for($i=0;$i<4;$i++)							//拆分数据。0和1是变量，2和3是代码
       {
@@ -149,7 +149,7 @@ class CToScratch3
          $opcode=$arrCode[$i];
          switch($arrCode[$i])
          {
-            case "event_whenflagclicked":				//Hats参数的解析
+            case "event_whenflagclicked":			//Hats参数的解析
             case "event_whenthisspriteclicked":			//Hats参数的解析
                $nCount=0;
                $i+=2;
@@ -215,8 +215,8 @@ class CToScratch3
                {
                   $strCondition=trim($m[4])."-".trim($m[2]);
                   if(trim($m[2])=='0')   $strCondition=trim($m[4]);
-                  $this->rpn->init($strCondition);
-                  $arrCondition=$this->rpn->toScratchJSON();
+                  $this->rpn_exp->init($strCondition);
+                  $arrCondition=$this->rpn_exp->toScratchJSON();
                }
                //if($arrCondition==NULL)
                //   $arrCondition[0]=$strCondition;		//FOR循环条件，这里还需要处理一下
@@ -303,6 +303,7 @@ class CToScratch3
    {
       if(!isset($arrFunc[0])) return NULL;
 
+//print_r($arrFunc);
       $nextuid=uid();
       $thisuid=array_pop($this->UIDS);
       $parentuid=array_pop($this->UIDS);
@@ -314,20 +315,47 @@ class CToScratch3
       {
          //主调函数的处理方法
          //格式：funName(arg);
-      				//单参数函数
+
+
+      	 /***********************带参数函数，需要处理inputs和fields*************************/
+         //运动
          case "motion_movesteps":			//移动n步
          case "motion_turnright":			//向右转
          case "motion_turnleft":			//向左转
-         case "motion_changexby":				//将X坐标增加n
-         case "motion_changeyby":				//将Y坐标增加n
+         case "motion_changexby":			//将X坐标增加n
+         case "motion_changeyby":			//将Y坐标增加n
          case "motion_setx":				//将X坐标设为
          case "motion_sety":				//将Y坐标设为
-         case "motion_pointindirection":			//面向n°方向
+         case "motion_pointindirection":		//面向n°方向
       				//多参数函数
          case "motion_glidesecstoxy":		//n秒内滑行到xy
          case "motion_gotoxy":			//将Y坐标设为
+         //外观
+         case "looks_say":
+         case "looks_changesizeby":
+         case "looks_setsizeto":
+
+         //声音
+
+         //事件
+
+         //控制
          case "control_wait":
          //case "control_repeat":		//这个单独在getFuncs里处理。
+
+         //侦测
+
+         //运算
+
+         //变量
+
+         //自制积木
+
+         //画笔
+         case "pen_setPenColorToColor":
+         case "pen_changePenColorParamBy":
+         //音乐
+
              //扫描多个参数的分隔符“,”，再进行两参数的拆分
              /*********************************************/
             $tmpExpression=Array("","","");					//标准积木，最多三个参数，因为需要执行字符追加，所以得初始化。
@@ -343,9 +371,9 @@ class CToScratch3
             {
                if(!is_numeric($tmpExpression[$i]))				//非纯数字的参数，利用RPN算法进行分解。
                {
-                  $this->rpn -> init($tmpExpression[$i]);				//参数中存在的空格问题，在rpn中处理
-                  $arg=$this->rpn->toScratchJSON();
-                  if($arg==FALSE) $argArr[$i]=$this->rpn->getStrRPN();		//公式
+                  $this->rpn_exp -> init($tmpExpression[$i]);				//参数中存在的空格问题，在rpn中处理
+                  $arg=$this->rpn_exp->toScratchJSON();
+                  if($arg==FALSE) $argArr[$i]=$this->rpn_exp->getStrRPN();		//公式
                   else
                      $argArr[$i]=$arg;						//值
                }
@@ -362,46 +390,64 @@ class CToScratch3
             //补上参数设置
             if($nCAC>0)							//至少有一个参数
             {
-               array_push($this->Blockly[$this->nType],	'{ "id": "'.$childuid1.'", "opcode": "math_number", "inputs": {}, "fields": { "NUM": { "name": "NUM", "value": "'.$argArr[0].'" } }, "next": {}, "topLevel": false, "parent": "'.$parentuid.'", "shadow": true}' );
+               array_push($this->Blockly[$this->nType],	'{"id": "'.$childuid1.'", "opcode": "'.$arrChildArg[0][1].'", "inputs": {}, "fields": { "'.$arrChildArg[0][2].'": { "name": "'.$arrChildArg[0][2].'", "value": '.$argArr[0].' } }, "next": null, "topLevel": false, "parent": "'.$thisuid.'", "shadow": true}' );
             }
 
             if($nCAC>1)							//存在第二个参数
             {
-               array_push($this->Blockly[$this->nType],	'{ "id": "'.$childuid2.'", "opcode": "math_number", "inputs": {}, "fields": { "NUM": { "name": "NUM", "value": "'.$argArr[1].'" } }, "next": {}, "topLevel": false, "parent": "'.$parentuid.'", "shadow": true}' );
+               array_push($this->Blockly[$this->nType],	'{"id": "'.$childuid2.'", "opcode": "'.$arrChildArg[1][1].'", "inputs": {}, "fields": { "'.$arrChildArg[1][2].'": { "name": "'.$arrChildArg[1][2].'", "value": '.$argArr[1].' } }, "next": null, "topLevel": false, "parent": "'.$thisuid.'", "shadow": true}' );
             }
 
             if($nCAC>2)							//存在第三个参数
             {
-               array_push($this->Blockly[$this->nType],	'{ "id": "'.$childuid3.'", "opcode": "math_number", "inputs": {}, "fields": { "NUM": { "name": "NUM", "value": "'.$argArr[2].'" } }, "next": {}, "topLevel": false, "parent": "'.$parentuid.'", "shadow": true}' );
+               array_push($this->Blockly[$this->nType],	'{"id": "'.$childuid3.'", "opcode": "'.$arrChildArg[2][1].'", "inputs": {}, "fields": { "'.$arrChildArg[2][2].'": { "name": "'.$arrChildArg[2][2].'", "value": '.$argArr[2].' } }, "next": null, "topLevel": false, "parent": "'.$thisuid.'", "shadow": true}' );
             }
 
             //积木块的主参数
             array_push($this->Blockly[$this->nType],'{"id": "'.$thisuid.'", "opcode": "'.$arrFunc[0].'", "inputs": {'.
                (
                  ($nCAC==3)?			//三个参数
-                    ('"'.$arrChildArg[0].'": { "name": "'.$arrChildArg[0].'", "block": "'.$childuid1.'", "shadow": "'.$childuid1.'" }, "'.$arrChildArg[1].'": { "name": "'.$arrChildArg[1].'", "block": "'.$childuid2.'", "shadow": "'.$childuid2.'" }, "'.$arrChildArg[2].'": { "name": "'.$arrChildArg[2].'", "block": "'.$childuid3.'", "shadow": "'.$childuid3.'" }')
+                    ('"'.$arrChildArg[0][0].'": { "name": "'.$arrChildArg[0][0].'", "block": "'.$childuid1.'", "shadow": "'.$childuid1.'" }, "'.$arrChildArg[1][0].'": { "name": "'.$arrChildArg[1][0].'", "block": "'.$childuid2.'", "shadow": "'.$childuid2.'" }, "'.$arrChildArg[2][0].'": { "name": "'.$arrChildArg[2][0].'", "block": "'.$childuid3.'", "shadow": "'.$childuid3.'" }')
                   :
                     (
                        ($nCAC==2)?		//两个参数
-                            ('"'.$arrChildArg[0].'": { "name": "'.$arrChildArg[0].'", "block": "'.$childuid1.'", "shadow": "'.$childuid1.'" }, "'.$arrChildArg[1].'": { "name": "'.$arrChildArg[1].'", "block": "'.$childuid2.'", "shadow": "'.$childuid2.'" }')
+                            ('"'.$arrChildArg[0][0].'": { "name": "'.$arrChildArg[0][0].'", "block": "'.$childuid1.'", "shadow": "'.$childuid1.'" }, "'.$arrChildArg[1][0].'": { "name": "'.$arrChildArg[1][0].'", "block": "'.$childuid2.'", "shadow": "'.$childuid2.'" }')
                           :			//否则一个参数
-                            ('"'.$arrChildArg[0].'": { "name": "'.$arrChildArg[0].'", "block": "'.$childuid1.'", "shadow": "'.$childuid1.'" }')
+                            ('"'.$arrChildArg[0][0].'": { "name": "'.$arrChildArg[0][0].'", "block": "'.$childuid1.'", "shadow": "'.$childuid1.'" }')
                      )
                )
-               .'}, "fields": {}, "next": "'.$nextuid.'", "topLevel": '.($parentuid==NULL?'true':'false').', "parent": '.($parentuid==NULL?"{}":"\"".$parentuid."\"").', "shadow": false}');
+               .'}, "fields": {}, "next": "'.$nextuid.'", "topLevel": '.($parentuid==NULL?'true':'false').', "parent": '.($parentuid==NULL?"null":"\"".$parentuid."\"").', "shadow": false}');
 
          break;
-                                   //无参数函数，不需要inputs和fields
+
+
+         //无参数积木，不需要inputs和fields
+         //运动
+         case "motion_ifonedgebounce":		//遇到边缘就反弹
+         //外观
          case "looks_show":			//显示
          case "looks_hide":			//隐藏
          case "looks_cleargraphiceffects":	//清除图像特效
-         case "sound_stopallsounds":		//停止所有声音
-         case "sound_cleareffects":		//清除音效
-         case "sensing_resettimer":		//计时器归零
-         case "control_delete_this_clone":	//删除此克隆体
          case "looks_nextcostume":		//下一个造型
          case "looks_nextbackdrop":		//下一个背景
-         case "motion_ifonedgebounce":		//遇到边缘就反弹
+         //声音
+         case "sound_stopallsounds":		//停止所有声音
+         case "sound_cleareffects":		//清除音效
+         //事件
+         //控制
+         case "control_delete_this_clone":	//删除此克隆体
+         //侦测
+         case "sensing_resettimer":		//计时器归零
+         //运算
+         //变量
+         //自制积木
+         //画笔
+         case "pen_stamp":
+         case "pen_penDown":
+         case "pen_penUp":
+         //音乐
+
+            //构建积木数据
             array_push($this->Blockly[$this->nType],'{ "id": "'.$thisuid.'", "opcode": "'.$arrFunc[0].'", "inputs": {}, "fields": {}, "next": "'.$nextuid.'", "topLevel": '.($parentuid==NULL?'true':'false').', "parent": '.($parentuid==NULL?"{}":"\"".$parentuid."\"").', "shadow": false}' );
          break;
 
@@ -410,25 +456,113 @@ class CToScratch3
       }
    }
 
+   //根据opcode，获取对应的所有参数的名字
+   /*******************************************
+   Array(Array("inputs的第一个child的name","inputs的第一个child的block对应的数据的opcode","inputs的第一个child的block对应的数据的fields的name"),
+         Array("inputs的第二个child的name","inputs的第二个child的block对应的数据的opcode","inputs的第二个child的block对应的数据的fields的name"),
+         Array("inputs的第三个child的name","inputs的第三个child的block对应的数据的opcode","inputs的第三个child的block对应的数据的fields的name"));
 
+Blocks._blocks;
+{
+    "ID1": {
+        "id": "ID1",
+        "opcode": "pen_changePenColorParamBy",
+        "inputs": {
+            "COLOR_PARAM": {
+                "name": "COLOR_PARAM",			//inputs的第一个child的name
+                "block": "ID2",
+                "shadow": "ID2"
+            },
+            "VALUE": {
+                "name": "VALUE",			//inputs的第二个child的name
+                "block": "ID3",
+                "shadow": "ID3"
+            }
+        },
+        "fields": {},
+        "next": null,
+        "topLevel": true,
+        "parent": null,
+        "shadow": false
+    },
+    "ID2": {
+        "id": "ID2",
+        "opcode": "pen_menu_colorParam",		//inputs的第一个child的block对应的数据的opcode
+        "inputs": {},
+        "fields": {
+            "colorParam": {
+                "name": "colorParam",			//inputs的第一个child的block对应的数据的fields的name
+                "value": "color"
+            }
+        },
+        "next": null,
+        "topLevel": false,
+        "parent": "ID1",
+        "shadow": true
+    },
+    "ID3": {
+        "id": "ID3",
+        "opcode": "math_number",			//inputs的第二个child的block对应的数据的opcode
+        "inputs": {},
+        "fields": {
+            "NUM": {
+                "name": "NUM",				//inputs的第一个child的block对应的数据的fields的name
+                "value": "10"
+            }
+        },
+        "next": null,
+        "topLevel": false,
+        "parent": "ID1",
+        "shadow": true
+    }
+}
+
+
+   *******************************************/
    private function getArgName($opcode)
    {
       $arrArgName=Array(
-         "motion_movesteps"=>Array("STEPS"),
-         "motion_changexby"=>Array("DX"),
-         "motion_changeyby"=>Array("DY"),
-         "motion_setx"=>Array("X"),
-         "motion_sety"=>Array("Y"),
-         "motion_gotoxy"=>Array("X","Y"),
-         "motion_glidesecstoxy"=>Array("SECS","X","Y"),
-         //"control_repeat"=>Array("SUBSTACK","TIMES"),//这个已经转成for了，在getFuncs里处理。
-         "control_wait"=>Array("DURATION"),
-         "motion_turnright"=>Array("DEGREES"),
-         "motion_turnleft"=>Array("DEGREES"),
-         "motion_pointindirection"=>Array("DIRECTION")
+         //运动
+         "motion_movesteps"=>Array(Array("STEPS","math_number","NUM")),
+         "motion_changexby"=>Array(Array("DX","math_number","NUM")),
+         "motion_changeyby"=>Array(Array("DY","math_number","NUM")),
+         "motion_setx"=>Array(Array("X","math_number","NUM")),
+         "motion_sety"=>Array(Array("Y","math_number","NUM")),
+         "motion_gotoxy"=>Array(Array("X","math_number","NUM"),Array("Y","math_number","NUM")),
+         "motion_glidesecstoxy"=>Array(Array("SECS","math_number","NUM"),Array("X","math_number","NUM"),Array("Y","math_number","NUM")),
+         "motion_turnright"=>Array(Array("DEGREES","math_number","NUM")),
+         "motion_turnleft"=>Array(Array("DEGREES","math_number","NUM")),
+         "motion_pointindirection"=>Array(Array("DIRECTION","math_number","NUM")),
+
+         //外观
+         "looks_say"=>Array(Array("MESSAGE","math_number","TEXT")),
+         "looks_changesizeby"=>Array(Array("CHANGE","math_number","NUM")),
+         "looks_setsizeto"=>Array(Array("SIZE","math_number","NUM")),
+
+         //声音
+
+         //事件
+
+         //控制
+         "control_wait"=>Array(Array("DURATION","math_number","NUM")),
+         //"control_repeat"=>Array(Array("SUBSTACK","math_number","NUM"),Array("TIMES","math_number","NUM")),//这个已经转成for了，在getFuncs里处理。
+
+         //侦测
+
+         //运算
+
+         //变量
+
+         //自制积木
+
+         //画笔
+         "pen_setPenColorToColor"=>Array(Array("COLOR","colour_picker","COLOUR")),
+         "pen_changePenColorParamBy"=>Array(Array("COLOR_PARAM","pen_menu_colorParam","colorParam"),Array("VALUE","math_number","NUM")),
+
+         //音乐
+
       );
       return isset($arrArgName[$opcode])?$arrArgName[$opcode]:Array();
    }
-
 }
 ?>
