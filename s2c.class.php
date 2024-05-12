@@ -63,12 +63,14 @@ class Scratch3ToC
    //转换的数据被依次保存在数组$codeInC中。
    function convertCode($BlockID)
    {
-      if($BlockID=='') return;
+      if($BlockID=='') return -1;						//ID为空
       $Block=isset($this->Blocks->{$BlockID})?$this->Blocks->{$BlockID}:''; 	//此处可能会出现不存在现象，需要研究是否跟新添变量有关。
+
+      if($Block=='') return -1;							//ID所对应的数据不存在
 
       if(isset($this->arrBlockID[$Block->{"id"}]))
          unset($this->arrBlockID[$Block->{"id"}]);				//对于存在的积木，需从清单中清除，并执行后续的转换操作；
-      else return;								//对于不存在的积木，则直接返回。
+      else return -1;								//对于不存在的积木，则直接返回。
 
       switch($Block->{"opcode"}) //根据opcode来确认应如何转换
       {
@@ -1220,7 +1222,6 @@ class Scratch3ToC
          /**************************CHATTINGROOM 互动工具**************************/
 
 
-
          /**************************未定义**************************/
 
          default:
@@ -1233,36 +1234,41 @@ class Scratch3ToC
    //处理需要带括号的积木块，比如Hat类，循环类，判断类
    function convertFromHat($BlockID)
    {
-      $this->convertCode($BlockID);						//转换指令，需要传入BlockID
-      if($this->Blocks->{$BlockID}->{'next'}!=NULL)
+      if($this->convertCode($BlockID)!=-1)					//排除不存在的ID
       {
-         $this->convertFromHat($this->Blocks->{$BlockID}->{'next'});		//获取下一块积木，需要传入BlockID
-      }
-      else
-      {
-         $this->nLeftPadding--;
-         if($this->nLeftPadding>-1)
-            $this->codeInC[$this->currentType][]= $this->padding()."}\n\n";		//该类积木处理完后，需要补一个括号和两个换行
+         $this->convertCode($BlockID);						//转换指令，需要传入BlockID
+         if($this->Blocks->{$BlockID}->{'next'}!=NULL)
+         {
+            $this->convertFromHat($this->Blocks->{$BlockID}->{'next'});		//获取下一块积木，需要传入BlockID
+         }
+         else
+         {
+            $this->nLeftPadding--;
+            if($this->nLeftPadding>-1)
+               $this->codeInC[$this->currentType][]= $this->padding()."}\n\n";		//该类积木处理完后，需要补一个括号和两个换行
+         }
       }
    }
 
    //处理孤立的积木块
    function convertFromRest($BlockID)
    {
-      $this->convertCode($BlockID);						//转换指令，需要传入BlockID
-      if($this->Blocks->{$BlockID}->{'next'}!=NULL)
+      if($this->convertCode($BlockID)!=-1)					//排除不存在的ID
       {
-         $this->convertFromRest($this->Blocks->{$BlockID}->{'next'});		//获取下一块积木，需要传入BlockID
-      }
-      else
-      {
-         if($this->nLeftPadding>0)
+         if($this->Blocks->{$BlockID}->{'next'}!=NULL)
          {
-            $this->nLeftPadding--;						//因为没有头部积木，所以可能会一直减下去，所以要先判断是否需要减
-            $this->codeInC[$this->currentType][]= $this->padding()."}\n";		//该类积木处理完后，需要补一个括号
+            $this->convertFromRest($this->Blocks->{$BlockID}->{'next'});		//获取下一块积木，需要传入BlockID
          }
          else
-            $this->codeInC[$this->currentType][]= $this->padding()."\n";		//该类积木处理完后，需要补一个换行
+         {
+            if($this->nLeftPadding>0)
+            {
+               $this->nLeftPadding--;						//因为没有头部积木，所以可能会一直减下去，所以要先判断是否需要减
+               $this->codeInC[$this->currentType][]= $this->padding()."}\n";		//该类积木处理完后，需要补一个括号
+            }
+            else
+               $this->codeInC[$this->currentType][]= $this->padding()."\n";		//该类积木处理完后，需要补一个换行
+         }
       }
    }
 
