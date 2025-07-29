@@ -3,6 +3,16 @@ Convert the script of the Scratch Project to a C-LIKE programming language.
 
 该程序实现了将Scratch3.0项目中的脚本转换成文本代码的功能。
 
+新增：
+rpn_calc_expression.class.php
+拆分解析多则混合运算表达式
+
+rpn_logic_expression.class.php
+拆分解析逻辑运算表达式
+
+最新更新的版本，支持自制积木（自定义函数）的解析和生成。
+
+
 使用方法：
    include "s2c.class.php";
 
