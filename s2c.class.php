@@ -63,22 +63,14 @@ class Scratch3ToC
 
    //将积木代码转成伪代码
    //转换的数据被依次保存在数组$codeInC中。
-   function convertCode($oBlock)
+   function convertCode($oBlock,$bArg=false)		//bArg true:当前为自制积木的参数形式，需要加VAR或BOOL
    {
-//var_dump($this->arrBlockID);
 
-//echo $BlockID."\r\n";
-//echo $this->Blocks->{$BlockID}->{"opcode"}."\r\n\r\n\r\n";
-//var_dump($this->arrBlockID);
-
-if(isset($oBlock->{"block"}))							//block与shadow不一致，取shadow；如果一致，或shadow为NULL，取block
-{
-   $BlockID=$oBlock->{"block"};//($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"block"}:$oBlock->{"block"});
-}
-else $BlockID=$oBlock;
-
-echo "blockidddddddddddd\r\n";
-var_dump($BlockID);
+      if(isset($oBlock->{"block"}))							//block与shadow不一致，取shadow；如果一致，或shadow为NULL，取block
+      {
+         $BlockID=$oBlock->{"block"};//($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"block"}:$oBlock->{"block"});
+      }
+      else $BlockID=$oBlock;
 
       if($BlockID=='') return -1;						//ID为空
       $Block=isset($this->Blocks->{$BlockID})?$this->Blocks->{$BlockID}:''; 	//此处可能会出现不存在现象，需要研究是否跟新添变量有关。
@@ -88,12 +80,10 @@ var_dump($BlockID);
       if(isset($this->arrBlockID[$Block->{"id"}]))
          unset($this->arrBlockID[$Block->{"id"}]);				//对于存在的积木，需从清单中清除，并执行后续的转换操作；
       else return -1;								//对于不存在的积木，则直接返回。
-//var_dump($this->arrBlockID);
-echo "calleddddddddddddddddddddddddddddddd\r\n";
-var_dump($Block);
-
+      //var_dump($Block->{"opcode"});
       switch($Block->{"opcode"}) //根据opcode来确认应如何转换
       {
+
 
          /**************************ARGUMENT 参数**************************/
          case "text":								//大于小于等于中的普通文本参数
@@ -103,7 +93,7 @@ var_dump($Block);
 
          case "math_number":							//加减乘除中的普通数字参数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
+               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
             break;
 
          case "math_angle":							//旋转角度的普通数字参数
@@ -113,27 +103,27 @@ var_dump($Block);
 
          case "math_integer":							//前移1层
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
+               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
             break;
 
          case "math_whole_number":						//整数。重复执行n次里的数据
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
+               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
             break;
 
          case "math_positive_number":						//正数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
+               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
             break;
 
          case "argument_reporter_string_number":				//自制积木参数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= "VAR ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的字符串和数字类型参数。替换空格
+               $this->codeInC[$this->currentType][]= ($bArg==true?"VAR ":"").$Block->{"fields"}->{"VALUE"}->{"value"};	//"VAR ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的字符串和数字类型参数。替换空格
             break;
 
          case "argument_reporter_boolean":					//自制积木参数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= "BOOL ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的布尔值类型参数。文本标签不算参数。
+               $this->codeInC[$this->currentType][]= ($bArg==true?"BOOL ":"").$Block->{"fields"}->{"VALUE"}->{"value"};	//"BOOL ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的布尔值类型参数。文本标签不算参数。
             break;
 
 
@@ -369,7 +359,7 @@ var_dump($Block);
             break;
 
          case "looks_say":							//说
-            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."(";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"MESSAGE"});
             $this->codeInC[$this->currentType][]= " );\n";
             break;
@@ -611,7 +601,7 @@ var_dump($Block);
             $this->codeInC[$this->currentType][]= $this->padding()."if( ";
             if(isset($Block->{"inputs"}->{"CONDITION"}->{"block"}))
             {
-var_dump($Block->{"inputs"}->{"CONDITION"});
+               //var_dump($Block->{"inputs"}->{"CONDITION"});
                $this->convertCode( $Block->{"inputs"}->{"CONDITION"});
             }
             $this->codeInC[$this->currentType][]= " ){\n";
@@ -957,19 +947,19 @@ var_dump($Block->{"inputs"}->{"CONDITION"});
          /**************************变量**************************/
          case "data_variable":							//变量
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= "".$Block->{"fields"}->{"VARIABLE"}->{"value"};
+               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"VARIABLE"}->{"value"};
             break;
 
          case "data_setvariableto":						//将变量设为
             $this->codeInC[$this->currentType][]= $this->padding().''.$Block->{"fields"}->{"VARIABLE"}->{"value"};
-            $this->codeInC[$this->currentType][]=" = ";
+            $this->codeInC[$this->currentType][]="=";			//暂时不支持加空格。
             $this->convertCode($Block->{"inputs"}->{"VALUE"});
             $this->codeInC[$this->currentType][]= " ;\n";
             break;
 
          case "data_changevariableby":						//将变量增加
             $this->codeInC[$this->currentType][]= $this->padding()."".$Block->{"fields"}->{"VARIABLE"}->{"value"};
-            $this->codeInC[$this->currentType][]=" += ";
+            $this->codeInC[$this->currentType][]="+=";			//暂时不支持加空格。
             $this->convertCode($Block->{"inputs"}->{"VALUE"});
             $this->codeInC[$this->currentType][]= " ;\n";
             break;
@@ -1087,8 +1077,6 @@ var_dump($Block->{"inputs"}->{"CONDITION"});
             {
                if($arr->{'block'}!='')
                {
-echo "callllllllllllllllllllll\r\n";
-var_dump($arr);
                   $this->convertCode($arr->{"block"});//这里就是要取block
                   $this->codeInC[$this->currentType][]= " , ";
                }
@@ -1124,8 +1112,8 @@ var_dump($arr);
             {
                if($arr->{'block'}!='')
                {
-                  $this->convertCode($arr);
-                  $this->codeInC[$this->currentType][]= " , ";
+                  $this->convertCode($arr,true);				//在定义函数时，变量前要加类型符号VAR或BOOL，在使用时则不需要。
+                  $this->codeInC[$this->currentType][]= " , ";			//true用于表示当前是在函数定义中。
                }
             }
             if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
@@ -1306,12 +1294,11 @@ var_dump($arr);
    //处理需要带括号的积木块，比如Hat类，循环类，判断类
    function convertFromHat($oBlock)
    {
-var_dump($oBlock);
-if(isset($oBlock->{"block"}))
-{
-   $BlockID=($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"shadow"}:$oBlock->{"block"});
-}
-else $BlockID=$oBlock;
+      if(isset($oBlock->{"block"}))
+      {
+         $BlockID=($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"shadow"}:$oBlock->{"block"});
+      }
+      else $BlockID=$oBlock;
 
       if($this->convertCode($BlockID)!=-1)					//排除不存在的ID
       {
@@ -1336,13 +1323,12 @@ else $BlockID=$oBlock;
 
    //处理孤立的积木块
    function convertFromRest($oBlock)
-   {var_dump($oBlock);
-if(isset($oBlock->{"block"}))
-{
-   $BlockID=($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"shadow"}:$oBlock->{"block"});
-
-}
-else $BlockID=$oBlock;
+   {
+      if(isset($oBlock->{"block"}))
+      {
+         $BlockID=($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"shadow"}:$oBlock->{"block"});
+      }
+      else $BlockID=$oBlock;
 
       if($this->convertCode($BlockID)!=-1)					//排除不存在的ID
       {
@@ -1367,13 +1353,12 @@ else $BlockID=$oBlock;
 
    //处理需要带括号的积木块，比如Hat类，循环类，判断类
    function convertFromSDF($oBlock)
-   {var_dump($oBlock);
-if(isset($oBlock->{"block"}))
-{
-   $BlockID=($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"shadow"}:$oBlock->{"block"});
-
-}
-else $BlockID=$oBlock;
+   {
+      if(isset($oBlock->{"block"}))
+      {
+         $BlockID=($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"shadow"}:$oBlock->{"block"});
+      }
+      else $BlockID=$oBlock;
 
       if($this->convertCode($BlockID)!=-1)					//排除不存在的ID
       {
@@ -1492,7 +1477,7 @@ else $BlockID=$oBlock;
       $arrSDFBlockID=$this->getSDFBlocks();			//自制积木
       if(count($arrSDFBlockID)>0)
       {
-         $this->codeInC[$this->currentType][]= "//以下为自制积木\n";
+         $this->codeInC[$this->currentType][]= "//以下为自制积木\n/*\n\n无参数的自制积木函数定义格式为：\nvoid 积木名称(){\n\n}\n\n有参数的自制积木函数定义格式为：\nvoid 计算长为_长_宽为_宽_的矩形的面积(VAR 长,VAR 宽){\n\n}\n\n说明：\n自制积木的定义一定要优先于所有其它代码；\n自制积木无返回值，所以类型为void；\n普通参数类型为VAR；\n布尔值参数类型为BOOL；\n因为参数要显示在积木上，\n所以在函数名中用“_参数名_”来实现定位。\n*/\n";
          for($i=0;$i<count($arrSDFBlockID);$i++)
          {
             $this->convertFromSDF($arrSDFBlockID[$i]);
