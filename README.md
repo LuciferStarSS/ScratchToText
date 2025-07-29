@@ -11,7 +11,7 @@ Convert the script of the Scratch Project to a C-LIKE programming language.
 2.  rpn_logic_expression.class.php
 拆分解析逻辑运算表达式
 
-最新更新的版本，支持自制积木（自定义函数）的解析和生成。
+当前版本，支持自制积木（自定义函数）的解析和生成。
 
 ![演示效果](https://github.com/LuciferStarSS/ScratchToText/blob/main/test.png?raw=true)
 
