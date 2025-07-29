@@ -98,6 +98,7 @@ class CToScratch3
    *******************************************/
    //积木所对应的参数
    private  $arrArgInfo  = Array(			//每个带有参数的积木，都需要其他积木进行数据支持。不同的数据，表达上存在差异。
+                                                        //           inputs|shadow opcode| shadow fields
       //运动
       "motion_movesteps"			=>	Array(Array("STEPS","math_number","NUM")),					//移动10步
       "motion_turnright"			=>	Array(Array("DEGREES","math_number","NUM")),					//右转
@@ -117,9 +118,9 @@ class CToScratch3
       "motion_setrotationstyle" 		=>	Array(),									//设置旋转方式
 
       //外观
-      "looks_sayforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SEC","math_number","NUM")),		//说几秒
+      "looks_sayforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SECS","text","TEXT")),		//说几秒
       "looks_say"				=>	Array(Array("MESSAGE","text","TEXT")),						//说
-      "looks_thinkforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SEC","math_number","NUM")),		//想几秒
+      "looks_thinkforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SECS","text","TEXT")),		//想几秒
       "looks_think" 				=>	Array(Array("MESSAGE","text","TEXT")),						//想
       "looks_switchcostumeto" 			=>	Array(Array("COSTUME","looks_costume","COSTUME")),				//切换造型为
       "looks_nextcostume"			=>	Array(),									//下一个造型
@@ -1787,6 +1788,8 @@ gt直接接add，而不是text
 
       $childCalcBlockUID='';
 
+var_dump($arrChildArgInfo);
+echo "parsedd\n";
       if(is_array($dataArg))				//当前参数是数组，是计算表达式被拆分后的结果
       {
          $arrCalcBlockParent=Array();				//此处存放子积木块UID与父积木块UID的对应关系。
@@ -1811,7 +1814,7 @@ var_dump($this->arrSelfDefinedArgs);
             //参数1积木块
             if(is_numeric($arrCalcBlock[2]))				//纯数字参数，直接使用，不需要shadow。   UID 为 $arrArgUID[0]， ShadowID 与 UID 一致。
             {
-               array_push($this->Blockly, '{"id": "'.$arrArgUID[0].'","opcode": "math_number"    ,"inputs": {},"fields": {"NUM": {"name": "NUM","value": "'.$arrCalcBlock[2].'"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
+               array_push($this->Blockly, '{"id": "'.$arrArgUID[0].'","opcode": "'.$arrChildArgInfo[1].'"    ,"inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": "'.$arrCalcBlock[2].'"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
             }
             else
             {
@@ -1821,7 +1824,7 @@ var_dump($this->arrSelfDefinedArgs);
                   //block
                   array_push($this->Blockly, '{"id": "'.$arrArgUID[0].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.$this->uid().'","value": "'.$arrCalcBlock[2].'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": false}');
                   //shadow
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode": "math_number" ,"inputs": {},"fields": {"NUM": {"name": "NUM","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode": "'.$arrChildArgInfo[1].'" ,"inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
                }
 
                else if(isset($this->arrSelfDefinedArgs[$this->arrCurrentBlock][$arrCalcBlock[2]]))	//对自制积木中的本地变量直接引用
@@ -1835,7 +1838,7 @@ var_dump($this->arrSelfDefinedArgs);
                   //block对变量的直接引用
                   array_push($this->Blockly, '{"id": "'.$arrArgUID[0].'","opcode":"argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$arrCalcBlock[2].'"}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow":false}');
                   //shadow
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode": "math_number" ,"inputs": {},"fields": {"NUM": {"name": "NUM","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode": "'.$arrChildArgInfo[1].'" ,"inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
                }
 
                else if(preg_match("/ID_([^^]*?)_DI/",$arrCalcBlock[2])==1)	//指向另一个积木，需要额外加一个Shadow
@@ -1843,13 +1846,13 @@ var_dump($this->arrSelfDefinedArgs);
                   $arrCalcBlockParent[$arrCalcBlock[2]]=$arrCalcBlock[1];	//保存child与parent的映射关系
 
                   $arrArgUID[0]=$arrCalcBlock[2];				//直接使用该ID
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode":"math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode":"'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
                }
 
                else//啥也不是时，为0。此类情况，一般是在自制积木定义之外使用了参数变量，或者变量名错误。
                {
                   //echo "啥也不是\n";
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode":      "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": "0"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[0].'","opcode": "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": "0"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
                   $arrArgUID[0]=$arrShadowUID[0];$arrCalcBlock[3];//block和shadow保持一致
                }
 
@@ -1858,7 +1861,7 @@ var_dump($this->arrSelfDefinedArgs);
             //参数2积木块
             if(is_numeric($arrCalcBlock[3]))				//纯数字参数，直接使用，不需要shadow。
             {
-               array_push($this->Blockly, '{"id": "'.$arrArgUID[1].'","opcode": "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": "'.$arrCalcBlock[3].'"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
+               array_push($this->Blockly, '{"id": "'.$arrArgUID[1].'","opcode": "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": "'.$arrCalcBlock[3].'"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
             }
             else
             {
@@ -1867,7 +1870,7 @@ var_dump($this->arrSelfDefinedArgs);
                {
                   //echo "已定义变量\n";
                   array_push($this->Blockly, '{"id": "'.$arrArgUID[1].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.$this->uid().'","value": "'.$arrCalcBlock[3].'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": false}');
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode": "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": ""}},"next": null,"topLevel": true,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode": "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": ""}},"next": null,"topLevel": true,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
                }
 
                else if(isset($this->arrSelfDefinedArgs[$this->arrCurrentBlock][$arrCalcBlock[3]]))	//对自制积木中的本地变量直接引用
@@ -1882,7 +1885,7 @@ var_dump($this->arrSelfDefinedArgs);
                   //对变量的直接引用
                   array_push($this->Blockly, '{"id": "'.$arrArgUID[1].'","opcode":"argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$arrCalcBlock[3].'"}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow":false}');
                   //默认Shadow值
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode": "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode": "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": ""}},"next": null,"topLevel": false,"parent":  "'.$arrCalcBlock[1].'","shadow": true}');
                }
 
                else if(preg_match("/ID_([^^]*?)_DI/",$arrCalcBlock[3])==1)	//指向另一个积木
@@ -1890,14 +1893,14 @@ var_dump($this->arrSelfDefinedArgs);
                   //echo "另一块积木\n";
                   $arrCalcBlockParent[$arrCalcBlock[3]]=$arrCalcBlock[1];	//保存child与parent的映射关系
 
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode":      "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": ""}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode":      "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": ""}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
                   $arrArgUID[1]=$arrCalcBlock[3];//block和shadow保持一致
                }
 
                else//啥也不是时，为0.
                {
                   //echo "错误数据\n";
-                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode":"math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": "0"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
+                  array_push($this->Blockly, '{"id": "'.$arrShadowUID[1].'","opcode":"'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": "0"}},"next": null,"topLevel": false,"parent": "'.$arrCalcBlock[1].'","shadow": true}');
                   $arrArgUID[1]=$arrShadowUID[1];//$arrCalcBlock[3];//block和shadow保持一致
                }
 
@@ -1924,7 +1927,7 @@ var_dump($this->arrSelfDefinedArgs);
              //block
              array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[0].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.$this->uid().'","value": "'.$dataArg2.'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": false}');
              //shadow
-             array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[1].'", "opcode": "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": "10"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
+             array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[1].'", "opcode": "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": "10"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
          }
          else if(isset($this->arrSelfDefinedArgs[$this->arrCurrentBlock][$dataArg]))	//对自制积木中的本地变量直接引用
          {
@@ -1932,7 +1935,7 @@ var_dump($this->arrSelfDefinedArgs);
              //block
              array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[0].'","opcode": "argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$dataArg2.'"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": false}');
              //shadow
-             array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[1].'", "opcode": "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": "10"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
+             array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[1].'", "opcode": "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": "10"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
 
          }
          else{										//纯数字/字符串
@@ -1943,7 +1946,7 @@ var_dump($this->arrSelfDefinedArgs);
                $dataArg=$dataArg2;
 
              //block
-             array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[0].'", "opcode": "math_number","inputs": {},"fields": {"NUM": {"name": "NUM","value": "'.$dataArg.'"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
+             array_push($this->Blockly, '{"id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgInfo[1].'","inputs": {},"fields": {"'.$arrChildArgInfo[2].'": {"name": "'.$arrChildArgInfo[2].'","value": "'.$dataArg.'"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
              $arrChildBlockUID[1]=NULL;
          }
 
@@ -2149,6 +2152,8 @@ var_dump($this->arrSelfDefinedArgs);
                //构建当前积木的完整数据
                for($i=0;$i<$nCAC;$i++)
                {
+var_dump($arrChildArg[$i]);
+echo "GGGGGGGGGGGGGGGGGGGGG\n";
                   //生成参数积木，返回UID
                   $arrChildUID=$this->parseCalculationExpression($arrChildArg[$i],$argArr[$i],$thisUID); //解析的过程中，也会创建相应的积木数据，最终返回UID
 
@@ -2158,7 +2163,7 @@ var_dump($this->arrSelfDefinedArgs);
                   if($arrChildUID[1]!=NULL)
                   {
                      //补一个shadow
-                     array_push($this->Blockly,    '{"id": "'.$strShadowUID.'","opcode": "math_number","inputs": {},"fields": {    "NUM": {"name": "NUM","value": "10"    }},"next": null,"topLevel": true,"parent": null,"shadow": true}');
+                     array_push($this->Blockly,    '{"id": "'.$strShadowUID.'","opcode": "'.$arrChildArg[$i][1].'","inputs": {},"fields": {    "'.$arrChildArg[$i][2].'": {"name": "'.$arrChildArg[$i][2].'","value": "10"    }},"next": null,"topLevel": true,"parent": null,"shadow": true}');
                      //拼接主积木的参数数据
                      $strBlock.=($i>0?',':'') . ' "'.$arrChildArg[$i][0].'": { "name": "'.$arrChildArg[$i][0].'", "block": "'.$arrChildUID[0].'", "shadow": "'.$strShadowUID.'" }';
                   }
