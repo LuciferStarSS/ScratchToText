@@ -93,7 +93,7 @@ class Scratch3ToC
 
          case "math_number":							//加减乘除中的普通数字参数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
+               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
             break;
 
          case "math_angle":							//旋转角度的普通数字参数
@@ -103,17 +103,17 @@ class Scratch3ToC
 
          case "math_integer":							//前移1层
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
+               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
             break;
 
          case "math_whole_number":						//整数。重复执行n次里的数据
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
+               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
             break;
 
          case "math_positive_number":						//正数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= intval($Block->{"fields"}->{"NUM"}->{"value"});
+               $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUM"}->{"value"};
             break;
 
          case "argument_reporter_string_number":				//自制积木参数
@@ -359,7 +359,7 @@ class Scratch3ToC
             break;
 
          case "looks_say":							//说
-            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."(";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"MESSAGE"});
             $this->codeInC[$this->currentType][]= " );\n";
             break;
