@@ -88,7 +88,7 @@ class Scratch3ToC
          /**************************ARGUMENT 参数**************************/
          case "text":								//大于小于等于中的普通文本参数
             if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。下同。
-              $this->codeInC[$this->currentType][]= is_numeric($Block->{"fields"}->{"TEXT"}->{"value"})? $Block->{"fields"}->{"TEXT"}->{"value"}:('"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"');
+              $this->codeInC[$this->currentType][]= '"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"'; //is_numeric($Block->{"fields"}->{"TEXT"}->{"value"})? $Block->{"fields"}->{"TEXT"}->{"value"}:('"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"');
             break;
 
          case "math_number":							//加减乘除中的普通数字参数
