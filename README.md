@@ -12,6 +12,7 @@ rpn_logic_expression.class.php
 
 最新更新的版本，支持自制积木（自定义函数）的解析和生成。
 
+![演示效果](https://github.com/LuciferStarSS/ScratchToText/blob/main/test.png?raw=true)
 
 使用方法：
    include "s2c.class.php";
