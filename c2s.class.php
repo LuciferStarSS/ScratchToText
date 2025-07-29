@@ -118,9 +118,9 @@ class CToScratch3
       "motion_setrotationstyle" 		=>	Array(),									//设置旋转方式
 
       //外观
-      "looks_sayforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SECS","text","TEXT")),		//说几秒
+      "looks_sayforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SECS","math_number","NUM")),	//说几秒
       "looks_say"				=>	Array(Array("MESSAGE","text","TEXT")),						//说
-      "looks_thinkforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SECS","text","TEXT")),		//想几秒
+      "looks_thinkforsecs" 			=>	Array(Array("MESSAGE","text","TEXT"),Array("SECS","math_number","NUM")),	//想几秒
       "looks_think" 				=>	Array(Array("MESSAGE","text","TEXT")),						//想
       "looks_switchcostumeto" 			=>	Array(Array("COSTUME","looks_costume","COSTUME")),				//切换造型为
       "looks_nextcostume"			=>	Array(),									//下一个造型
