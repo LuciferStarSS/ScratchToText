@@ -1,6 +1,11 @@
 <?php
 //set_time_limit(3);
 /*
+
+TODO:
+造型编号需要调整。
+
+
 1.加载json数据
 2.获取所有积木块ID
 3.获取所有头部积木块（HATs，此类积木块为每组代码的起始位置）
@@ -47,6 +52,7 @@ class Scratch3ToC
    {
       $this->Blocks  = json_decode( $Blocks );					//保存所有积木
       $this->Variables  = json_decode( $Variables );				//保存所有变量
+      //var_dump($this->Blocks);
    }
 
    //检测某opcode是否为hat类型
@@ -65,17 +71,19 @@ class Scratch3ToC
    //转换的数据被依次保存在数组$codeInC中。
    function convertCode($oBlock,$bArg=false)		//bArg true:当前为自制积木的参数形式，需要加VAR或BOOL
    {
-
+//var_dump($oBlock);
       if(isset($oBlock->{"block"}))							//block与shadow不一致，取shadow；如果一致，或shadow为NULL，取block
       {
          $BlockID=$oBlock->{"block"};//($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"block"}:$oBlock->{"block"});
       }
       else $BlockID=$oBlock;
 
+//var_dump($this->Blocks);
       if($BlockID=='') return -1;						//ID为空
-      $Block=isset($this->Blocks->{$BlockID})?$this->Blocks->{$BlockID}:''; 	//此处可能会出现不存在现象，需要研究是否跟新添变量有关。
+      $Block=isset($this->Blocks->{$BlockID})?$this->Blocks->{$BlockID}:NULL; 	//此处可能会出现不存在现象，需要研究是否跟新添变量有关。
 
-      if($Block=='') return -1;							//ID所对应的数据不存在
+      //var_dump($Block);
+      if($Block==NULL) return -1;							//ID所对应的数据不存在
 
       if(isset($this->arrBlockID[$Block->{"id"}]))
          unset($this->arrBlockID[$Block->{"id"}]);				//对于存在的积木，需从清单中清除，并执行后续的转换操作；
@@ -84,12 +92,11 @@ class Scratch3ToC
       switch($Block->{"opcode"}) //根据opcode来确认应如何转换
       {
 
-
          /**************************ARGUMENT 参数**************************/
          case "text":								//大于小于等于中的普通文本参数
             if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。下同。
-              $this->codeInC[$this->currentType][]= '"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"'; //is_numeric($Block->{"fields"}->{"TEXT"}->{"value"})? $Block->{"fields"}->{"TEXT"}->{"value"}:('"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"');
-            break;
+              $this->codeInC[$this->currentType][]= is_numeric($Block->{"fields"}->{"TEXT"}->{"value"})? $Block->{"fields"}->{"TEXT"}->{"value"}:('"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"');
+            break;//'"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"'; //
 
          case "math_number":							//加减乘除中的普通数字参数
             if($Block->{"parent"}!=NULL)
@@ -232,15 +239,15 @@ class Scratch3ToC
             break;
 
          case "motion_direction":						//变量：方向
-            $this->codeInC[$this->currentType][]  ="DIRECTION";
+            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()";
             break;
 
          case "motion_xposition":						//变量：X坐标
-            $this->codeInC[$this->currentType][]  ="X";
+            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()";
             break;
 
          case "motion_yposition":						//变量：Y坐标
-            $this->codeInC[$this->currentType][]  ="Y";
+            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()";
             break;
 
          case "motion_turnright":						//右转n度
@@ -396,11 +403,16 @@ class Scratch3ToC
             break;
 
          case "looks_costumenumbername":					//当前角色编号/名称的类型
-            $this->codeInC[$this->currentType][]= "\"造型_".$Block->{"fields"}->{"NUMBER_NAME"}->{"value"}."\"";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}.'( "';
+            $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUMBER_NAME"}->{"value"};
+            $this->codeInC[$this->currentType][]= '" )';
+
             break;
 
          case "looks_backdropnumbername":					//当前角色编号/名称的类型
-            $this->codeInC[$this->currentType][]= "\"背景_".$Block->{"fields"}->{"NUMBER_NAME"}->{"value"}."\"";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}.'( "';
+            $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUMBER_NAME"}->{"value"};
+            $this->codeInC[$this->currentType][]= '" )';
             break;
 
          case "looks_switchbackdropto":						//换成背景
@@ -719,7 +731,7 @@ class Scratch3ToC
             break;
 
          case "sensing_answer":							//询问的答案
-            $this->codeInC[$this->currentType][]  = "ANSWER";
+            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."()";
             break;
 
          case "sensing_askandwait":						//询问并等待
@@ -867,36 +879,41 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" ) ";
             break;
 
-         case "operator_not":							//非
-            $this->codeInC[$this->currentType][]=" ! ";
-            $this->convertCode($Block->{"inputs"}->{"OPERAND"});
-            $this->codeInC[$this->currentType][]="  ";
+         case "operator_not":
+            //var_dump($Block->{"inputs"}->{"OPERAND"});							//非
+            $this->codeInC[$this->currentType][]=" !";
+            //if(isset($Block->{"inputs"}->{"OPERAND"}))
+               $this->convertCode($Block->{"inputs"}->{"OPERAND"});
+            //else
+            //   $this->codeInC[$this->currentType][]= "";
+            $this->codeInC[$this->currentType][]=" ";
             break;
 
          case "operator_mathop":						//数学函数
-            if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="10 ^")				//10的n次方
-            {
-               $this->codeInC[$this->currentType][]=" pow( 10 ,";
-               $this->convertCode($Block->{"inputs"}->{"NUM"});
-               $this->codeInC[$this->currentType][]=" ) ";
-            }
-            else if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="e ^")				//e的n次方
-            {
-               $this->codeInC[$this->currentType][]=" pow( E ,";
-               $this->convertCode($Block->{"inputs"}->{"NUM"});
-               $this->codeInC[$this->currentType][]=" ) ";
-            }
-            else
-            {
-               $this->codeInC[$this->currentType][]=$Block->{"fields"}->{"OPERATOR"}->{"value"};//其它函数名
-               $this->codeInC[$this->currentType][]="( ";
-               $this->convertCode($Block->{"inputs"}->{"NUM"});
-               $this->codeInC[$this->currentType][]=" ) ";
-            }
+            //if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="10 ^")				//10的n次方
+            //{
+            //   $this->codeInC[$this->currentType][]=$Block->{"opcode"}.'( "10 ^" ,';
+            //   $this->convertCode($Block->{"inputs"}->{"NUM"});
+            //   $this->codeInC[$this->currentType][]=" ) ";
+            //}
+            //else if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="e ^")				//e的n次方
+            //{
+            //   $this->codeInC[$this->currentType][]=$Block->{"opcode"}.'( "e ^" ,';
+            //   $this->convertCode($Block->{"inputs"}->{"NUM"});
+            //   $this->codeInC[$this->currentType][]=" ) ";
+            //}
+            //else
+            //{
+            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."(";
+            $this->codeInC[$this->currentType][]='"'.$Block->{"fields"}->{"OPERATOR"}->{"value"}.'"';//其它函数名
+            $this->codeInC[$this->currentType][]=",";
+            $this->convertCode($Block->{"inputs"}->{"NUM"});
+            $this->codeInC[$this->currentType][]=" ) ";
+            //}
             break;
 
          case "operator_random":						//随机数
-            $this->codeInC[$this->currentType][]=" rand( ";
+            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."( ";
             $this->convertCode($Block->{"inputs"}->{"FROM"});
             $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"TO"});
@@ -904,16 +921,17 @@ class Scratch3ToC
             break;
 
          case "operator_length":						//字符串长度
-            $this->codeInC[$this->currentType][]=" strlen( ";
+            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."( ";
             $this->convertCode($Block->{"inputs"}->{"STRING"});
             $this->codeInC[$this->currentType][]=" ) ";
             break;
 
          case "operator_letter_of":						//列表下标取值
+            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."( ";
             $this->convertCode($Block->{"inputs"}->{"STRING"});
-            $this->codeInC[$this->currentType][]  ="[ ";
+            $this->codeInC[$this->currentType][]  =" , ";
             $this->convertCode($Block->{"inputs"}->{"LETTER"});
-            $this->codeInC[$this->currentType][]  =" ] ";
+            $this->codeInC[$this->currentType][]  =" ) ";
             break;
 
          case "operator_join":							//连接
@@ -985,73 +1003,73 @@ class Scratch3ToC
             break;
 
          case "data_addtolist":							//列表中增加值
-            $this->codeInC[$this->currentType][]= $this->padding()."".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".push( ";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" ,";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
             $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "data_deleteoflist":						//删除列表内某个数据
-            $this->codeInC[$this->currentType][]= $this->padding()."".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".delete( ";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"INDEX"});
-            $this->codeInC[$this->currentType][]= ");\n";
+            $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "data_deletealloflist":						//清空列表数据
-            $this->codeInC[$this->currentType][]= $this->padding()."".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".removeAll();\n";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" );\n";
             break;
 
          case "data_insertatlist":						//往列表某项前中插入数据
-            $this->codeInC[$this->currentType][]= $this->padding()."".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".insert( ";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"INDEX"});
-            $this->codeInC[$this->currentType][]=",";
+            $this->codeInC[$this->currentType][]=" ,";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
-            $this->codeInC[$this->currentType][]= ");\n";
+            $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "data_replaceitemoflist":						//替换列表中某项数据
-            $this->codeInC[$this->currentType][]= $this->padding()."".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".replace( ";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"INDEX"});
-            $this->codeInC[$this->currentType][]=",";
+            $this->codeInC[$this->currentType][]=" ,";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
-            $this->codeInC[$this->currentType][]= ");\n";
+            $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "data_itemoflist":						//取列表中某项的值
-            $this->codeInC[$this->currentType][]= "".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".getAt( ";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"INDEX"});
-            $this->codeInC[$this->currentType][]=")";
+            $this->codeInC[$this->currentType][]=" )";
             break;
 
          case "data_itemnumoflist":						//列表中某数据第一次出现的编号
-            $this->codeInC[$this->currentType][]= "".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".indexOf( ";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
-            $this->codeInC[$this->currentType][]=")";
+            $this->codeInC[$this->currentType][]=" )";
             break;
 
          case "data_lengthoflist":						//取列表项目数
-            $this->codeInC[$this->currentType][]= "".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".length()";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" )";
             break;
 
          case "data_listcontainsitem":						//列表中是否包含某数
-            $this->codeInC[$this->currentType][]= "".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=".exist( ";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
+            $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
-            $this->codeInC[$this->currentType][]=")";
+            $this->codeInC[$this->currentType][]=" )";
             break;
 
          /**************************VARIABLE 变量**************************/
 
 
          /**************************PROCEDURE 自制积木**************************/
-         //case "procedures_prototype":						//自制积木原形
+         case "procedures_prototype":						//自制积木原形
          //   //print_r($Block);
          //   $this->codeInC[$this->currentType][]= $this->padding()."void ".$Block->{"mutation"}->{"proccode"}."( ";
          //   foreach( $Block->{'inputs'} as $key=>$arr)
@@ -1065,22 +1083,28 @@ class Scratch3ToC
          //   if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
          //      $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
          //   $this->codeInC[$this->currentType][]= "){\n";	//差别在这里：这个是函数定义。（现在看看，已经不明白当时要表达什么了。）
-         //   break;
+            break;
 
-         case "procedures_call":						//过程调用
-            $strProcedName=isset($this->arrProcedureName[$Block->{"mutation"}->{"proccode"}])?
-				$this->arrProcedureName[$Block->{"mutation"}->{"proccode"}]:
-				$Block->{"mutation"}->{"proccode"};
+         case "procedures_call":						//自制积木的调用
+
+            $strFormat=$Block->{"mutation"}->{"proccode"};
+
+            $strFormat=str_replace("%b","%s",$strFormat);
+            $strFormat=str_replace("%n","%s",$strFormat);
+
+            $strProcedName=isset($this->arrProcedureName[$strFormat])?
+				$this->arrProcedureName[$strFormat]:
+				$strFormat;
+
+            $arrArg=json_decode($Block->{"mutation"}->{"argumentids"});				//参数是有顺序的，需要按argumentids里的顺序进行解析。
 
             $this->codeInC[$this->currentType][]= $this->padding()."".$strProcedName."( ";
-            foreach( $Block->{'inputs'} as $key=>$arr)
+            for($a=0;$a<count($arrArg);$a++)
             {
-               if($arr->{'block'}!='')
-               {
-                  $this->convertCode($arr->{"block"});//这里就是要取block
-                  $this->codeInC[$this->currentType][]= " , ";
-               }
+                $this->convertCode($Block->{'inputs'}->{$arrArg[$a]}->{'block'});
+                $this->codeInC[$this->currentType][]= " , ";
             }
+
             if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
                $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
 
@@ -1088,6 +1112,7 @@ class Scratch3ToC
             break;
 
          case "procedures_definition":						//自制积木定义
+
             $prototypeBlockID=$Block->{"inputs"}->{"custom_block"}->{'block'};
             $Block=$this->Blocks->{$prototypeBlockID}  ;
             $arguments=json_decode($Block->{"mutation"}->{"argumentnames"});
@@ -1101,23 +1126,49 @@ class Scratch3ToC
 										//自制积木名字的处理
             $strFormat=$Block->{"mutation"}->{"proccode"};
             $strFormat=str_replace("%b","%s",$strFormat);
+            $strFormat=str_replace("%n","%s",$strFormat);
+
             $strProcedName = vsprintf($strFormat,$arguments);			//先把参数名更新到字符串中
             $strProcedName = str_replace(" ","",$strProcedName);				//    再去掉空格
+echo $strProcedName;
 
-            //$strProcedName = explode(" ",$Block->{"mutation"}->{"proccode"})[0];		//或者，按空格拆分，只保留第一条数据。
+            $this->arrProcedureName[$strFormat]=$strProcedName;
 
-            $this->arrProcedureName[$Block->{"mutation"}->{"proccode"}]=$strProcedName;
             $this->codeInC[$this->currentType][]= $this->padding()."void ".$strProcedName."( ";
-            foreach( $Block->{'inputs'} as $key=>$arr)
+
+var_dump($this->arrProcedureName);
+            if(empty((array)$Block->{'inputs'}))					//可能是旧版本，也可能是无输入
             {
-               if($arr->{'block'}!='')
+               if($Block->{'mutation'}->{'argumentnames'}!=NULL)			//Scratch2.0
                {
-                  $this->convertCode($arr,true);				//在定义函数时，变量前要加类型符号VAR或BOOL，在使用时则不需要。
-                  $this->codeInC[$this->currentType][]= " , ";			//true用于表示当前是在函数定义中。
+                  $strArgName= json_decode($Block->{'mutation'}->{'argumentnames'});
+                  $strArgType= json_decode($Block->{'mutation'}->{'argumentdefaults'});
+                  for($a=0;$a<count($strArgName);$a++)
+                  {
+                     if($a>0)
+                        $this->codeInC[$this->currentType][]=' , ';
+
+                     if($strArgType[$a]=="false") 
+                        $this->codeInC[$this->currentType][]="BOOL ".$strArgName[$a];
+                     else
+                        $this->codeInC[$this->currentType][]="VAR ".$strArgName[$a];
+                   }
+                }
+             }
+             else
+             {
+                foreach( $Block->{'inputs'} as $key=>$arr)				//Scratch3.0
+                {
+                  if($arr->{'block'}!='')
+                  {
+                     $this->convertCode($arr,true);				//在定义函数时，变量前要加类型符号VAR或BOOL，在使用时则不需要。
+                     $this->codeInC[$this->currentType][]= " , ";			//true用于表示当前是在函数定义中。
+                  }
+
                }
+                  if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
+                     $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
             }
-            if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
-               $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
 
             $this->codeInC[$this->currentType][]= "){\n";
 
@@ -1381,6 +1432,42 @@ class Scratch3ToC
       }
    }
 
+   //定义自制积木，完成proccode的映射
+   function defineSDF($BlockID)
+   {
+						//ID为空
+      $Block=isset($this->Blocks->{$BlockID})?$this->Blocks->{$BlockID}:NULL; 	//此处可能会出现不存在现象，需要研究是否跟新添变量有关。
+
+      if($Block)
+      {
+         $prototypeBlockID=$Block->{"inputs"}->{"custom_block"}->{'block'};
+         $Block=$this->Blocks->{$prototypeBlockID}  ;
+         $arguments=json_decode($Block->{"mutation"}->{"argumentnames"});
+
+         $prefix = '_';
+         $suffix = '_'; 
+         $arguments = array_map(function($item) use ($prefix, $suffix) {	//给参数设置前后缀，方便识别参数位置
+            return $prefix . $item . $suffix;
+         }, $arguments);
+
+									//自制积木名字的处理
+         $strFormat=$Block->{"mutation"}->{"proccode"};
+
+         $strFormat=str_replace("%b","%s",$strFormat);			//%b改成%s
+         $strFormat=str_replace("%n","%s",$strFormat);			//%n改成%s   vsprintf不支持%b和%n，且%n是Scratch2.0的，3.0已经取消了。
+
+         $strProcedName = vsprintf($strFormat,$arguments);			//先把参数名更新到字符串中
+         $strProcedName = str_replace(" ","",$strProcedName);				//    再去掉空格
+
+         $this->arrProcedureName[$strFormat]=$strProcedName;
+
+
+         //print_r($this->arrProcedureName);
+      }
+
+   }
+
+
    //获取所有SDF类型的Block的ID
    function getSDFBlocks()
    {
@@ -1420,7 +1507,6 @@ class Scratch3ToC
       $arrParentBlocks=Array();
       if($this->arrBlockID!=NULL)
       {
-
          //var_dump($this->arrBlockID);
          $arrRestBlockID=$this->arrBlockID;
          foreach($arrRestBlockID as $BlockID=>$value)
@@ -1475,7 +1561,15 @@ class Scratch3ToC
       $this->currentType=2;
 
       $arrSDFBlockID=$this->getSDFBlocks();			//自制积木
-      if(count($arrSDFBlockID)>0)
+
+      if(count($arrSDFBlockID)>0)				//先完成定义
+      {
+         for($i=0;$i<count($arrSDFBlockID);$i++)
+         {
+            $this->defineSDF($arrSDFBlockID[$i]);
+         }
+      }
+      if(count($arrSDFBlockID)>0)				//再进行解析
       {
          $this->codeInC[$this->currentType][]= "//以下为自制积木\n/*\n\n无参数的自制积木函数定义格式为：\nvoid 积木名称(){\n\n}\n\n有参数的自制积木函数定义格式为：\nvoid 计算长为_长_宽为_宽_的矩形的面积(VAR 长,VAR 宽){\n\n}\n\n说明：\n自制积木的定义一定要优先于所有其它代码；\n自制积木无返回值，所以类型为void；\n普通参数类型为VAR；\n布尔值参数类型为BOOL；\n因为参数要显示在积木上，\n所以在函数名中用“_参数名_”来实现定位。\n*/\n";
          for($i=0;$i<count($arrSDFBlockID);$i++)
@@ -1496,12 +1590,14 @@ class Scratch3ToC
 
       $this->currentType=3;
       $arrRestBlockID=$this->getRestParentBlocks();		//剩余零散积木
+      //var_dump($arrRestBlockID);
       if(count($arrRestBlockID)>0)
       {
          $this->codeInC[$this->currentType][]= "//以下为游离的积木\n";
 
          for($i=0;$i<count($arrRestBlockID);$i++)
          {
+            //var_dump($arrRestBlockID[$i]);
             $this->convertFromRest($arrRestBlockID[$i]);
          }
       }
@@ -1510,6 +1606,7 @@ class Scratch3ToC
    //输出转换结果
    function dumpCodeInC()
    {
+      //var_dump($this->codeInC);
       if($this->codeInC!=NULL)
       {
          echo json_encode( Array(implode("",$this->codeInC[0]),implode("",$this->codeInC[1]),implode("",$this->codeInC[2]),implode("",$this->codeInC[3])));
