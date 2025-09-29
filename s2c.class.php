@@ -94,7 +94,7 @@ class Scratch3ToC
 
          /**************************ARGUMENT 参数**************************/
          case "text":								//大于小于等于中的普通文本参数
-            if($Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。下同。
+            if(isset($Block->{"parent"}) && $Block->{"parent"}!=NULL)//运算积木原本就带数字的，一旦被其它积木代替，就不起作用了。这类数字，它的parent为NULL。下同。
               $this->codeInC[$this->currentType][]= is_numeric($Block->{"fields"}->{"TEXT"}->{"value"})? $Block->{"fields"}->{"TEXT"}->{"value"}:('"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"');
             break;//'"'.trim($Block->{"fields"}->{"TEXT"}->{"value"},'"').'"'; //
 
@@ -805,6 +805,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" < ";
             $this->convertCode($Block->{"inputs"}->{"OPERAND2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_gt":							//大于
@@ -813,6 +816,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" > ";
             $this->convertCode($Block->{"inputs"}->{"OPERAND2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_equals":						//等于
@@ -821,14 +827,23 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" == ";
             $this->convertCode($Block->{"inputs"}->{"OPERAND2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_add":							//加法
+
+print_r($Block);
             $this->codeInC[$this->currentType][]=" ( ";
             $this->convertCode($Block->{"inputs"}->{"NUM1"});
             $this->codeInC[$this->currentType][]=" + ";
             $this->convertCode($Block->{"inputs"}->{"NUM2"});
             $this->codeInC[$this->currentType][]=" ) ";
+
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_subtract":						//减法
@@ -837,6 +852,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" - ";
             $this->convertCode($Block->{"inputs"}->{"NUM2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_multiply":						//乘法
@@ -845,6 +863,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" * ";
             $this->convertCode($Block->{"inputs"}->{"NUM2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_divide":						//除法
@@ -853,6 +874,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" / ";
             $this->convertCode($Block->{"inputs"}->{"NUM2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_mod":							//求余
@@ -861,6 +885,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" % ";
             $this->convertCode($Block->{"inputs"}->{"NUM2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_and":							//且
@@ -869,6 +896,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" && ";
             $this->convertCode($Block->{"inputs"}->{"OPERAND2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_or":							//或
@@ -877,6 +907,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" || ";
             $this->convertCode($Block->{"inputs"}->{"OPERAND2"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_not":
@@ -887,6 +920,9 @@ class Scratch3ToC
             //else
             //   $this->codeInC[$this->currentType][]= "";
             $this->codeInC[$this->currentType][]=" ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_mathop":						//数学函数
@@ -910,6 +946,9 @@ class Scratch3ToC
             $this->convertCode($Block->{"inputs"}->{"NUM"});
             $this->codeInC[$this->currentType][]=" ) ";
             //}
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_random":						//随机数
@@ -918,12 +957,18 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"TO"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_length":						//字符串长度
             $this->codeInC[$this->currentType][]=$Block->{"opcode"}."( ";
             $this->convertCode($Block->{"inputs"}->{"STRING"});
             $this->codeInC[$this->currentType][]=" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_letter_of":						//列表下标取值
@@ -932,6 +977,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][]  =" , ";
             $this->convertCode($Block->{"inputs"}->{"LETTER"});
             $this->codeInC[$this->currentType][]  =" ) ";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
             break;
 
          case "operator_join":							//连接
@@ -940,12 +988,18 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][] = " ,";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"STRING2"});
             $this->codeInC[$this->currentType][] = " )";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
          break;
 
          case "operator_round":							//四舍五入
             $this->codeInC[$this->currentType][] = $Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"NUM"});
             $this->codeInC[$this->currentType][] = " )";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
          break;
 
          case "operator_contains":						//包含
@@ -954,6 +1008,9 @@ class Scratch3ToC
             $this->codeInC[$this->currentType][] = " , ";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"STRING2"});
             $this->codeInC[$this->currentType][] = " )";
+            if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
+               $this->codeInC[$this->currentType][]=" \n ";
+
          break;
 
          /**************************OPERATOR 运算**************************/
@@ -986,7 +1043,7 @@ class Scratch3ToC
          case "data_hidevariable":						//隐藏变量
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"VARIABLE"}->{"value"};
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );";
             break;
 
          /**************************列表**************************/
@@ -1130,13 +1187,11 @@ class Scratch3ToC
 
             $strProcedName = vsprintf($strFormat,$arguments);			//先把参数名更新到字符串中
             $strProcedName = str_replace(" ","",$strProcedName);				//    再去掉空格
-echo $strProcedName;
 
             $this->arrProcedureName[$strFormat]=$strProcedName;
 
             $this->codeInC[$this->currentType][]= $this->padding()."void ".$strProcedName."( ";
 
-var_dump($this->arrProcedureName);
             if(empty((array)$Block->{'inputs'}))					//可能是旧版本，也可能是无输入
             {
                if($Block->{'mutation'}->{'argumentnames'}!=NULL)			//Scratch2.0
@@ -1353,7 +1408,7 @@ var_dump($this->arrProcedureName);
 
       if($this->convertCode($BlockID)!=-1)					//排除不存在的ID
       {
-         $this->convertCode($BlockID);						//转换指令，需要传入BlockID
+         //$this->convertCode($BlockID);					//？？？？？？似乎重复执行了。转换指令，需要传入BlockID
          if($this->Blocks->{$BlockID}->{'next'}!=NULL)
          {
             $this->convertFromHat($this->Blocks->{$BlockID}->{'next'});		//获取下一块积木，需要传入BlockID
@@ -1394,13 +1449,12 @@ var_dump($this->arrProcedureName);
                $this->nLeftPadding--;						//因为没有头部积木，所以可能会一直减下去，所以要先判断是否需要减
                $this->codeInC[$this->currentType][]= $this->padding()."}\n";		//该类积木处理完后，需要补一个括号
             }
-            else
-               $this->codeInC[$this->currentType][]= $this->padding()."\n";		//该类积木处理完后，需要补一个换行
+            else 
+               $this->codeInC[$this->currentType][]= $this->padding()."\n";		//给不连续的积木加空行，用于分段。
+
          }
       }
    }
-
-
 
    //处理需要带括号的积木块，比如Hat类，循环类，判断类
    function convertFromSDF($oBlock)
@@ -1413,7 +1467,7 @@ var_dump($this->arrProcedureName);
 
       if($this->convertCode($BlockID)!=-1)					//排除不存在的ID
       {
-         $this->convertCode($BlockID);						//转换指令，需要传入BlockID
+         //$this->convertCode($BlockID);						//重复执行了？？？？？？？转换指令，需要传入BlockID
          if($this->Blocks->{$BlockID}->{'next'}!=NULL)
          {
             $this->convertFromSDF($this->Blocks->{$BlockID}->{'next'});		//获取下一块积木，需要传入BlockID
@@ -1512,7 +1566,7 @@ var_dump($this->arrProcedureName);
          foreach($arrRestBlockID as $BlockID=>$value)
          {
             //isset($this->Blocks->{$BlockID}->{'parent'}) &&			//都有parent属性
-            if( $this->Blocks->{$BlockID}->{'parent'}==NULL && $this->Blocks->{$BlockID}->{'opcode'}!="procedures_definition") 	//查找游离积木中的第一个（parent为NULL），同时排除自制积木
+            if(( !isset($this->Blocks->{$BlockID}->{'parent'}) || $this->Blocks->{$BlockID}->{'parent'}==NULL) && $this->Blocks->{$BlockID}->{'opcode'}!="procedures_definition") 	//查找游离积木中的第一个（parent为NULL），同时排除自制积木
                $arrParentBlocks[]=$BlockID;
          }
       }
@@ -1523,10 +1577,9 @@ var_dump($this->arrProcedureName);
    function compileSB3()
    {
       $this->currentType=0;
+      $this->codeInC[$this->currentType][] = "//适用于所有角色的变量\n";
       if( isset($this->Variables->{"GV"}) && count((array)$this->Variables->{"GV"})>0)
       {
-         $this->codeInC[$this->currentType][] = "//适用于所有角色的变量\n";
-
          foreach($this->Variables->{"GV"} as $VID=>$arr)
          {
             if($arr->{"type"}=="broadcast_msg")									//消息也会被定义成变量。
@@ -1541,9 +1594,9 @@ var_dump($this->arrProcedureName);
       }
 
       $this->currentType=1;
+      $this->codeInC[$this->currentType][] = "//仅适用于当前角色的变量\n";
       if( isset($this->Variables->{"CV"}) && count((array)$this->Variables->{"CV"})>0)
       {
-         $this->codeInC[$this->currentType][] = "//仅适用于当前角色的变量\n";
 
          foreach($this->Variables->{"CV"} as $VID=>$arr)
          {
@@ -1559,6 +1612,7 @@ var_dump($this->arrProcedureName);
       }
 
       $this->currentType=2;
+      $this->codeInC[$this->currentType][]= "//以下为已关联事件的积木\n";
 
       $arrSDFBlockID=$this->getSDFBlocks();			//自制积木
 
@@ -1571,7 +1625,7 @@ var_dump($this->arrProcedureName);
       }
       if(count($arrSDFBlockID)>0)				//再进行解析
       {
-         $this->codeInC[$this->currentType][]= "//以下为自制积木\n/*\n\n无参数的自制积木函数定义格式为：\nvoid 积木名称(){\n\n}\n\n有参数的自制积木函数定义格式为：\nvoid 计算长为_长_宽为_宽_的矩形的面积(VAR 长,VAR 宽){\n\n}\n\n说明：\n自制积木的定义一定要优先于所有其它代码；\n自制积木无返回值，所以类型为void；\n普通参数类型为VAR；\n布尔值参数类型为BOOL；\n因为参数要显示在积木上，\n所以在函数名中用“_参数名_”来实现定位。\n*/\n";
+         $this->codeInC[$this->currentType][]= "";
          for($i=0;$i<count($arrSDFBlockID);$i++)
          {
             $this->convertFromSDF($arrSDFBlockID[$i]);
@@ -1581,7 +1635,7 @@ var_dump($this->arrProcedureName);
       $arrHatBlockID=$this->getHatBlocks();			//头部积木
       if(count($arrHatBlockID)>0)
       {
-         $this->codeInC[$this->currentType][]= "//以下为已关联事件的积木\n";
+         //$this->codeInC[$this->currentType][]= "//以下为已关联事件的积木\n";
          for($i=0;$i<count($arrHatBlockID);$i++)
          {
             $this->convertFromHat($arrHatBlockID[$i]);
@@ -1589,12 +1643,10 @@ var_dump($this->arrProcedureName);
       }
 
       $this->currentType=3;
+      $this->codeInC[$this->currentType][]= "//以下为未关联事件的游离积木\n";
       $arrRestBlockID=$this->getRestParentBlocks();		//剩余零散积木
-      //var_dump($arrRestBlockID);
       if(count($arrRestBlockID)>0)
       {
-         $this->codeInC[$this->currentType][]= "//以下为游离的积木\n";
-
          for($i=0;$i<count($arrRestBlockID);$i++)
          {
             //var_dump($arrRestBlockID[$i]);
@@ -1606,10 +1658,10 @@ var_dump($this->arrProcedureName);
    //输出转换结果
    function dumpCodeInC()
    {
-      //var_dump($this->codeInC);
+      var_dump($this->codeInC);
       if($this->codeInC!=NULL)
       {
-         echo json_encode( Array(implode("",$this->codeInC[0]),implode("",$this->codeInC[1]),implode("",$this->codeInC[2]),implode("",$this->codeInC[3])));
+         echo json_encode( Array(implode("",$this->codeInC[0]),implode("",$this->codeInC[1]),implode("",$this->codeInC[2]),preg_replace("/\n\n+/","\n\n",trim(implode("",$this->codeInC[3]),"\n"))."\n"));
       }
    }
 }
