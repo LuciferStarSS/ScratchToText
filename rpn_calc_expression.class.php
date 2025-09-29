@@ -110,8 +110,8 @@ class RPN_CALCULATION_EXPRESSION {
       //函数的嵌套调用问题，可以用preProcessing来处理。
       list($strResult,$this->_preAttach)=preProcessingFunctionCall($strResult);
 
-      print_r($this->_preAttach);
-      echo "pre:".$strResult;
+      //print_r($this->_preAttach);
+      //echo "pre:".$strResult;
 
       return $strResult;
    }
@@ -137,8 +137,12 @@ class RPN_CALCULATION_EXPRESSION {
       $this->strExpression = $this->preProcessingCalculationExpression($strCalculationExpression);//$strCalculationExpression;	//预处理，解决两种情况。
       $this->_arrExpression = preg_split("/(\+)|(\-)|(\*)|(\%)|(\/)|(\()|(\))/",$this->strExpression,-1,PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);//将字符串表达式转成数组
 
+
+//echo "preProcessingCE\n";
+//print_r($this->_arrExpression);
       if(count($this->_arrExpression)==1)			//预处理后只有一个函数调用，则直接返回函数调用数据。
       {
+//echo "只有一个。";
          if(isset($this->_preAttach[0]) && count($this->_preAttach[0])==3)
             return $this->_arrExpression;//FALSE;//$strCalculationExpression;//$this->exp2RPN();				//没有可拆分的运算表达式，可能是单个变量，直接返回。
          else 
