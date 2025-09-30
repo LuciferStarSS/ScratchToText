@@ -8,6 +8,70 @@
       解析时，需要遍历链表。
 
 
+TODO：
+
+motion_movesteps( 160 );
+for(int i1 = 0; i1 < 10; i1++ ){
+   motion_movesteps( 150 );
+   for(int i2 = 0; i2 < 10; i2++ ){
+      motion_movesteps( 103 );
+   }
+   motion_movesteps( 120 );
+}
+motion_movesteps( 110 );
+
+
+
+
+//以下为已关联事件的积木
+//当接收到广播
+event_whenbroadcastreceived("跟上2"){
+   looks_show();
+   motion_pointindirection( data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 3 )  ) );
+   motion_gotoxy( data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 1 )  ) , data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 2 )  ) );
+   if(  ( 身长2 == 编号 )  ){
+      control_delete_this_clone();
+   }
+}
+
+
+
+
+Array
+(
+    [0] => Array
+        (
+            [0] => Array
+                (
+                    [0] => >
+                    [1] => ID_}ve1]2EubQC:SIH}Oc4c_DI
+                    [2] => ID_r;rMrM#;Kv~0K;Kqsz3u_DI + ID_tu55aF~L[Qg#S#?oQ.TO_DI		//这里少了一个算术运算分解
+                    [3] => 10
+                )
+
+        )
+
+    [2] => Array
+        (
+            [0] => Array
+                (
+                    [0] => operator_random
+                    [1] => ID_r;rMrM#;Kv~0K;Kqsz3u_DI
+                    [2] => 1,4
+                )
+
+            [1] => Array
+                (
+                    [0] => operator_random
+                    [1] => ID_tu55aF~L[Qg#S#?oQ.TO_DI
+                    [2] => 1,3
+                )
+
+        )
+
+)
+
+
 关于变量ID问题
 
 当前文本代码转积木，是对当前角色的代码进行更新，其中变量部分，也有改动。
@@ -4057,15 +4121,12 @@ echo "ELSEELSEELSEELSEELSEELSEELSEELSE\n";
       ***************************************************************************************************************/
       for($n=0;$n<2;$n++)					//两组逻辑判断数据（主逻辑判断和子逻辑判断）
       {
+print_r($arrLogicExpData[$n]);
          if(isset($arrLogicExpData[$n]))			//数据可能不存在，所以要确认一下
          {
             $nLEDLength=count($arrLogicExpData[$n]);
             for($i=0;$i<$nLEDLength;$i++)				//遍历每一组数据
-//            for($i=$nLEDLength-1;$i>=0;$i--)				//遍历每一组数据
             {
-
-
-
                $arrCurrentLogicBlock=$arrLogicExpData[$n][$i];			//当前运算操作符数据：  Array([0]=>逻辑运算符,[1]=>UID,[2]=>第一个参数,[3]=>第二个参数);
 
 echo "积木：$i";
@@ -4147,10 +4208,12 @@ print_r($arrLogicArgUID);
 
                   if($strArgVal=="")						//参数为空
                   {
-                     //echo "为空\n";
-                     $arrChildShadowUID[$m]=$arrLogicArgUID[$m]=UID();				//给shadow生成一个UID。
-                     array_push($this->Blockly, '{"t":"1","id": "'.$arrLogicArgUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
-                     $arrCurrentLogicBlock[$m+2]=$arrLogicArgUID[$m];	
+
+                     //$arrChildShadowUID[$m]=$arrLogicArgUID[$m]=UID();				//给shadow生成一个UID。
+
+                     //echo "为空：".$arrChildShadowUID[$m]."\n";
+                     //array_push($this->Blockly, '{"t":"1","id": "'.$arrLogicArgUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
+                     $arrCurrentLogicBlock[$m+2]=NULL;//$arrLogicArgUID[$m];	
                   }
                   else if(is_numeric($strArgVal))				//参数是数字，创建一个同值的shadow，由于是数字，所以不可能是不需要shadow的且或非
                   {
