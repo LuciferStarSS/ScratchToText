@@ -8,70 +8,6 @@
       解析时，需要遍历链表。
 
 
-TODO：
-
-motion_movesteps( 160 );
-for(int i1 = 0; i1 < 10; i1++ ){
-   motion_movesteps( 150 );
-   for(int i2 = 0; i2 < 10; i2++ ){
-      motion_movesteps( 103 );
-   }
-   motion_movesteps( 120 );
-}
-motion_movesteps( 110 );
-
-
-
-
-//以下为已关联事件的积木
-//当接收到广播
-event_whenbroadcastreceived("跟上2"){
-   looks_show();
-   motion_pointindirection( data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 3 )  ) );
-   motion_gotoxy( data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 1 )  ) , data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 2 )  ) );
-   if(  ( 身长2 == 编号 )  ){
-      control_delete_this_clone();
-   }
-}
-
-
-
-
-Array
-(
-    [0] => Array
-        (
-            [0] => Array
-                (
-                    [0] => >
-                    [1] => ID_}ve1]2EubQC:SIH}Oc4c_DI
-                    [2] => ID_r;rMrM#;Kv~0K;Kqsz3u_DI + ID_tu55aF~L[Qg#S#?oQ.TO_DI		//这里少了一个算术运算分解
-                    [3] => 10
-                )
-
-        )
-
-    [2] => Array
-        (
-            [0] => Array
-                (
-                    [0] => operator_random
-                    [1] => ID_r;rMrM#;Kv~0K;Kqsz3u_DI
-                    [2] => 1,4
-                )
-
-            [1] => Array
-                (
-                    [0] => operator_random
-                    [1] => ID_tu55aF~L[Qg#S#?oQ.TO_DI
-                    [2] => 1,3
-                )
-
-        )
-
-)
-
-
 关于变量ID问题
 
 当前文本代码转积木，是对当前角色的代码进行更新，其中变量部分，也有改动。
@@ -352,11 +288,12 @@ class CToScratch3
        //音乐
       "music_playDrumForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DRUM","text","TEXT"),Array("BEATS","math_number","NUM"))),  		//击打乐器n拍
       "music_restForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BEATS","math_number","NUM"))),  						//休止n拍
-      "music_playNoteForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("NOTE","",""),Array("BEATS","math_number","NUM"))),  			//演奏音符n拍
+      "music_playNoteForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("NOTE","note","NOTE"),Array("BEATS","math_number","NUM"))),  			//演奏音符n拍
       "music_setInstrument"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("INSTRUMENT","music_menu_INSTRUMENT","TEXT"))),  				//将乐器设为
       "music_setTempo"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TEMPO","math_number","NUM"))),  						//将演奏速度设定为
       "music_changeTempo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("TEMPO","math_number","NUM"))),  						//将演奏速度增加
       "music_menu_DRUM"				=>	Array("fields"=>Array(Array("DRUM","text")),"inputs"=>Array(Array("DRUM","text","TEXT"))),  				//乐器列表
+      "music_getTempo"				=>	Array("fields"=>Array(),"inputs"=>Array()),  						//将演奏速度设定为
       "note"					=>	Array("fields"=>Array(Array("NOTE","text")),"inputs"=>Array(Array("NOTE","math_number","NUM"))),  			//音符
       "music_menu_INSTRUMENT"			=>	Array("fields"=>Array(Array("INSTRUMENT","text")),"inputs"=>Array(Array("INSTRUMENT","text","TEXT"))),			//乐器菜单
 
@@ -2912,51 +2849,6 @@ print_r($this->UIDS);
             $arrFuncData[0]="operator_mathop";		//这几个函数，实际都是由积木“operator_mathop”实现的。
 */
 
-      	 /***********************带参数函数，需要处理inputs和fields*************************/
-
-         //参数需要在自己积木里添加
-         case "looks_gotofrontback":			//上移/下移
-
-         case "motion_setrotationstyle":		//设置旋转方式			//一个不需要额外参数的特例
-
-         case "looks_changeeffectby":			//修改特效值为
-         case "looks_seteffectto":			//设置特效为
-
-
-         //变量
-
-         case "data_setvariableto":			//设置变量值为
-         case "data_changevariableby":			//修改变量值为
-         case "data_hidevariable":
-         case "data_showvariable":			//显示变量
-
-         case "data_addtolist":
-         case "data_itemoflist":
-         case "data_deleteoflist":
-         case "data_itemnumoflist":
-         case "data_deletealloflist":
-         case "data_insertatlist":
-         case "data_lengthoflist":
-         case "data_replaceitemoflist":
-         case "data_showlist":
-         case "data_hidelist":
-         case "data_listcontainsitem":
-
-         case "sound_playuntildone":
-         case "sound_seteffectto":
-         case "sound_play":
-
-         case "sound_stopallsounds":
-         case "sound_changeeffectby":
-         case "sound_seteffectto":
-         case "sound_cleareffects":
-         case "sound_changevolumeby":
-         case "sound_setvolumeto":
-
-
-      	 /***********************不带参数和带数字参数函数*************************/
-
-      	 /***********************无fields的函数（不用考虑是否带inputs参数）*************************/
          //运动
          case "motion_movesteps":			//移动n步
          case "motion_turnright":			//向右转
@@ -2975,6 +2867,7 @@ print_r($this->UIDS);
          case "motion_xposition":
          case "motion_yposition":
          case "motion_direction":
+         case "motion_setrotationstyle":		//设置旋转方式			//一个不需要额外参数的特例
 
          //外观
          case "looks_goforwardbackwardlayers":
@@ -2993,16 +2886,30 @@ print_r($this->UIDS);
          case "looks_cleargraphiceffects":		//清除图像特效
          case "looks_nextcostume":			//下一个造型
          case "looks_nextbackdrop":			//下一个背景
-
          case "looks_size":
          case "looks_costumenumbername":
          case "looks_backdropnumbername":
+         case "looks_gotofrontback":			//上移/下移
+         case "looks_changeeffectby":			//修改特效值为
+         case "looks_seteffectto":			//设置特效为
+
 
 
          //声音
+         case "sound_playuntildone":			//播放声音等待播完
+         case "sound_play":				//播放声音
+         case "sound_seteffectto":			//将音效设为
+         case "sound_changevolumeby":			//将音量增加
+         case "sound_setvolumeto":			//将音量设为
+         case "sound_volume":				//音量
          case "sound_stopallsounds":			//停止所有声音
          case "sound_cleareffects":			//清除音效
          case "sound_changeeffectby":
+
+
+         //事件
+         case "event_broadcast":			//广播消息
+         case "event_broadcastandwait":			//广播消息
 
          //控制
          case "control_wait":				//等待
@@ -3029,7 +2936,6 @@ print_r($this->UIDS);
          case "operator_join":
          case "operator_length":
          case "operator_round":
-
          case "operator_mod":
          case "operator_add":
          case "operator_subtract":
@@ -3037,11 +2943,6 @@ print_r($this->UIDS);
          case "operator_multiply":
          case "operator_length":
          case "operator_mathop":
-
-         //事件
-         case "event_broadcast":			//广播消息
-         case "event_broadcastandwait":			//广播消息
-
 
          //自制积木
 
@@ -3056,7 +2957,35 @@ print_r($this->UIDS);
          case "pen_penUp":				//抬笔
          case "pen_clear":				//全部擦除
 
+
+         //音乐
+         case "music_playDrumForBeats": 		//击打乐器n拍
+         case "music_restForBeats":			//休止n拍
+         case "music_playNoteForBeats":			//演奏音符n拍
+         case "music_setInstrument":			//将乐器设为
+         case "music_setTempo":				//将演奏速度设定为
+         case "music_changeTempo":			//将演奏速度增加
+         case "music_menu_DRUM":			//乐器列表
+         case "music_getTempo":				//将演奏速度设定为
+
          //变量
+         case "data_setvariableto":			//设置变量值为
+         case "data_changevariableby":			//修改变量值为
+         case "data_hidevariable":
+         case "data_showvariable":			//显示变量
+         case "data_addtolist":
+         case "data_itemoflist":
+         case "data_deleteoflist":
+         case "data_itemnumoflist":
+         case "data_deletealloflist":
+         case "data_insertatlist":
+         case "data_lengthoflist":
+         case "data_replaceitemoflist":
+         case "data_showlist":
+         case "data_hidelist":
+         case "data_listcontainsitem":
+
+
 
          //自制扩展
          case "chattingroom_sendReport":		//上报信息
@@ -3082,8 +3011,6 @@ print_r($this->UIDS);
 
             *****************************************************************************/
 
-echo "此次待处理的数据为：";
-print_r($arrFuncData);
 
             /*****************************************************************************
                     数据可能是这样的：
