@@ -71,18 +71,48 @@ class Scratch3ToC
    //转换的数据被依次保存在数组$codeInC中。
    function convertCode($oBlock,$bArg=false)		//bArg true:当前为自制积木的参数形式，需要加VAR或BOOL
    {
-//var_dump($oBlock);
-      if(isset($oBlock->{"block"}))							//block与shadow不一致，取shadow；如果一致，或shadow为NULL，取block
+      if(isset($oBlock->{"block"}))	//传入的可能是Block而非ID		//block与shadow不一致，取shadow；如果一致，或shadow为NULL，取block
       {
          $BlockID=$oBlock->{"block"};//($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"block"}:$oBlock->{"block"});
+         if($BlockID==NULL) return -1;
       }
       else $BlockID=$oBlock;
 
-//var_dump($this->Blocks);
-      if($BlockID=='') return -1;						//ID为空
+      if(isset($BlockID->{"name"})) //传入的是一个json数据，而不是UID，这个是一个异常数据。
+      {
+/***********************************************
+遇到这么一例奇怪的数据。
+按照正常操作，当“且”的两个参数都去掉后，inputs里应该为空，但这份数据里，OPERAND1和OPERAND2都有，只是block和shadow指向了null。
+
+{
+    "opcode": "operator_and",
+    "next": null,
+    "parent": null,
+    "inputs": {
+        "OPERAND1": {
+            "name": "OPERAND1",
+            "block": null,
+            "shadow": null
+        },
+        "OPERAND2": {
+            "name": "OPERAND2",
+            "block": null,
+            "shadow": null
+        }
+    },
+    "fields": {},
+    "shadow": false,
+    "topLevel": true,
+    "x": 1827,
+    "y": 549,
+    "id": "@p5iW6^]LPnDyX%EZy9R"
+}
+***********************************************/
+         return -1;
+      }
+
       $Block=isset($this->Blocks->{$BlockID})?$this->Blocks->{$BlockID}:NULL; 	//此处可能会出现不存在现象，需要研究是否跟新添变量有关。
 
-      //var_dump($Block);
       if($Block==NULL) return -1;							//ID所对应的数据不存在
 
       if(isset($this->arrBlockID[$Block->{"id"}]))
@@ -1312,6 +1342,10 @@ print_r($Block);
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"TEMPO"});
             $this->codeInC[$this->currentType][]  = " );\n";
+            break;
+
+         case "music_getTempo":							//演奏速度
+            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."()";
             break;
 
          case "music_menu_DRUM":						//乐器列表
