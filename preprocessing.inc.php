@@ -122,16 +122,20 @@
       $_called_func = Array(		//可被调用函数白名单
          //运动
          'motion_xposition','motion_yposition','motion_direction',
-         //传感器
-         'sensing_mousedown','sensing_keypressed','sensing_coloristouchingcolor','sensing_touchingcolor','sensing_touchingobject',
-         //运算符
-         'sensing_answer','operator_mathop','operator_random','operator_join','operator_length',
          //外观
          'looks_size','looks_backdropnumbername','looks_costumenumbername',
          //声音
          'sound_volume',
+         //侦测
+         'sensing_touchingobject','sensing_touchingcolor','sensing_coloristouchingcolor','sensing_distanceto','sensing_answer','sensing_keypressed','sensing_mousedown','sensing_mousex','sensing_mousey','sensing_loudness','sensing_timer','sensing_current','sensing_of','sensing_dayssince2000','sensing_username',
+         //运算符
+         'operator_random','operator_contains','operator_join','operator_length','operator_mathop',"round","random","join",
+         //变量
+         'data_itemoflist','data_itemnumoflist','data_lengthoflist','data_listcontainsitem',
+         //音乐
+         'music_getTempo',
          //数学函数
-         //'abs','ceiling','floor','sqrt','operator_sin','cos','tan','atan','asin','acos','ln','log','e ^','10 ^', //sin函数会跟sesing冲突，所以还需要再斟酌一下。
+         'abs','ceiling','floor','sqrt','sinf','cos','tan','atan','asin','acos','ln','log','e ^','10 ^', //sin函数会跟sesing冲突，所以改成了sinf，在匹配后，会换成sin。
       );
 
       $_arrFuncCalling=Array();
@@ -183,11 +187,11 @@
             $strPrefix=trim(substr($strExpression,0,$nStart));		//截取字符串
          }
 
-         ////echo "关键词从 $nStart 开始。\n";
+         //echo "关键词从 $nStart 开始。\n";
 
          $j=$nStart+strlen($m[0][$i][0]);				//计算n条匹配数据后的参数的位置
 
-         ////echo "从 $j 开始搜索。\n";
+         //echo "从 $j 开始搜索。\n";
 
          $nParenthesisCounter=0;					//括号计数器
          $bParenthesisFound=false;					//发现括号标识
@@ -214,25 +218,26 @@
             else if($chCH==')') $nParenthesisCounter--;				//出现)：括号计数器自建
             if($nParenthesisCounter==0 && $bParenthesisFound) break;		//括号计数器为0且发现括号，则终止当前搜索
          }
-         ////echo "括号匹配为： $nParenthesisCounter 括号是否发现：".$bParenthesisFound." 字符串为： $strFuncArg \n";
+         //echo "括号匹配为： $nParenthesisCounter 括号是否发现：".$bParenthesisFound." 字符串为： $strFuncArg \n";
 
          $thisUID=UID();						//给被替换掉的函数设置一个UID
          if($strFuncArg!="")
          {
             $strFuncArg=substr($strFuncArg,1,-1);				//去掉头尾的一对小括号
             $arrResult[]=$thisUID;						//追加UID，用于替换原来的函数数据
+            if($m[0][$i][0]=="sinf")  $m[0][$i][0]="sin";			//将sinf换回sin
+
             $_arrFuncCalling[]=Array($m[0][$i][0],$thisUID,trim($strFuncArg));	//将函数名和参数另存，这里加一个trim，是因为调用的函数被UID替换了，而拼接的时候，添加了空格用以隔开各个参数。
          }
+         else $thisUID='';
 
          $strSuffix=substr($strExpression,$j,$nExpLength-$j);
 
          $strExpression=$strPrefix." ".$thisUID." ".$strSuffix;		//拼接的时候，加了空格
 
-         ////echo "替换后字符串为：[".$strExpression."]\n";
+         //echo "替换后字符串为：[".$strExpression."]\n";
          $nExpLength=strlen($strExpression);				//重新计算表达式字符串的长度。虽然长度改变了，但由于替换时从末尾倒序着进行的，所以函数所在的偏移量并没有发生改变。
       }
 
-      ////echo "\nPREPRETREAT: $strExpression \n";
-      //print_r($_arrFuncCalling);
       return Array(trim($strExpression),$_arrFuncCalling);		//返回新的表达式字符串，和相关的函数调用数据
    }
