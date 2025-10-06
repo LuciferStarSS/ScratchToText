@@ -32,8 +32,8 @@ class RPN_LOGIC_EXPRESSION {
 
    private $_priority 	  = Array('('=>0,')'=>0, '||' => 1, '&&' =>2,'!' => 3,'>'=>4,'<'=>4,'=='=>4,'!='=>4 ,
 
-                                  'operator_round' => 5, 'operator_length' => 5, 'sensing_distanceto'=>5,  'sensing_keypressed'=>5, //函数可以直接在这里添加，且只需要添加一次。
-                                  'operator_random' => 5, 'sensing_mousedown' =>5,'sensing_answer'=>5,'sensing_touchingobject'=>5,
+                                  //'operator_round' => 5, 'operator_length' => 5, 'sensing_distanceto'=>5,  'sensing_keypressed'=>5, //函数的调用已经在preProcessingFunctionCall里被替换掉了，所以不需要在这里处理了。
+                                  //'operator_random' => 5, 'sensing_mousedown' =>5,'sensing_answer'=>5,'sensing_touchingobject'=>5,
                                   //'abs'=>5,'ceiling'=>5,'floor'=>5,'sqrt'=>5,'operator_sin'=>5,'cos'=>5,'tan'=>5,'atan'=>5,
                                   //'asin'=>5,'acos'=>5,'ln'=>5,'log'=>5,'e ^'=>5,'10 ^'=>5,//最后两个算法不支持，待研究。
                                   );    	//计算优先级设定
@@ -53,6 +53,22 @@ class RPN_LOGIC_EXPRESSION {
       */
    }
 
+   private function isLogicFunctionCall($strFunctionName)
+   {
+      $arrLogicFunctionName=Array(
+                                 'sensing_touchingobject'=>1,
+                                 'sensing_touchingcolor'=>1,
+                                 'sensing_coloristouchingcolor'=>1,
+                                 'sensing_distanceto'=>1,
+                                 'sensing_answer'=>1,
+                                 'sensing_keypressed'=>1,
+                                 'sensing_mousedown'=>1,
+                                 'sensing_of'=>1
+                            );
+      return isset($arrLogicFunctionName[$strFunctionName]);
+
+   }
+
    /*************************************************
    *
    *  预处理逻辑表达式
@@ -63,14 +79,11 @@ class RPN_LOGIC_EXPRESSION {
    *
    *************************************************/
 
-   function preProcessingSubLogicExpression($strLogicExpression)
+   private function preProcessingSubLogicExpression($strLogicExpression)
    {
+      //对字符串中的函数调用进行预处理：用UID替换掉函数调用
       list($strLogicExpression,$arrCalledFunction)=preProcessingFunctionCall(trim($strLogicExpression));
 
-      echo "\n--------------preProcessing-------------------------\n";
-      echo "\n".$strLogicExpression."\n";
-      print_r($arrCalledFunction);
-      echo "\n---------------------------------------\n";
       /******************************************************************************************
 
           函数调用预处理(preProcessingFunctionCall)
@@ -115,41 +128,28 @@ class RPN_LOGIC_EXPRESSION {
 
       $arrSubLogicExpression=Array();
 
-      if(strpos($strLogicExpression,'(')===FALSE)			//如果没有括号，就结束
+      if(strpos($strLogicExpression,'(')===FALSE)							//如果没有括号，就结束
       {
          ////echo "不需要预处理\n";
-
-         //print_r($arrSubLogicExpression);
-
-         return Array(trim($strLogicExpression),NULL,$arrCalledFunction);
+         return Array(trim($strLogicExpression),NULL,$arrCalledFunction);				//这里没有进行是否是逻辑表达式的判断
       }
       
-//先按大小判断拆分
-//再按与或非拆分
-
-      $n= preg_match_all("/==|>|<|!=/",$strLogicExpression,$m,PREG_OFFSET_CAPTURE);//
+      $n= preg_match_all("/==|>|<|!=/",$strLogicExpression,$m,PREG_OFFSET_CAPTURE);			//按最基本的大于、等于、小于进行定位
       $nStrLength=strlen($strLogicExpression);
 
-echo "mmmmmmmmmmmmmmmm\n";
-      print_r($m);
+      //print_r($m);
 
       for($i=$n-1;$i>=0;$i--)//倒序处理
       {
-         ////echo "\n\n\nData:\n";
-         //print_r($m[0][$i]);
-         ////echo "本轮数据为：$strLogicExpression \n";
-         ////echo "本轮数据长为：$nStrLength \n";
-
-         //find right
-         $nLeftLoop			=$nRightLoop			=$m[0][$i][1];
+         //向右搜索小括号
+         $nLeftLoop	=$nRightLoop				=$m[0][$i][1];
          $bLeftParenthesisFound	=$bRightParenthesisFound	=false;
-         $nRightLoop+=2;								//||和&&各是两字符，要再跳过一个字符。
-         $nLeftLoop-=1;								//||和&&各是两字符，要再跳过一个字符。
-         $nLeftParenthesisCount	=$nRightParenthesisCount		=0;
+         $nRightLoop						+=2;					//||和&&各是两字符，要向右跳过2个字符。这是后面的逻辑，这里似乎不对。
+         $nLeftLoop						-=1;					//||和&&各是两字符，要向左跳过1个字符。这是后面的逻辑，这里似乎不对。
+         $nLeftParenthesisCount	=$nRightParenthesisCount	=0;
          while($nRightLoop<$nStrLength)
          {
             $chCH=$strLogicExpression[$nRightLoop++];
-            ////echo "RIGHT: ".$chCH." $nLeftParenthesisCount \n";
             if($chCH=='(') $nRightParenthesisCount++;
             if($chCH==')') $nRightParenthesisCount--;
             if($nRightParenthesisCount==-1) 
@@ -164,7 +164,7 @@ echo "mmmmmmmmmmmmmmmm\n";
             continue;
          }
 
-         //find left
+         //向左搜索小括号
          while($nLeftLoop>=0)
          {
             $chCH=$strLogicExpression[$nLeftLoop--];
@@ -180,14 +180,14 @@ echo "mmmmmmmmmmmmmmmm\n";
          ////echo "左侧搜索到：".$nLeftLoop."\n";
 
          ////echo "LF: $nLeftParenthesisCount RF:$nRightParenthesisCount \n";
-         if($nLeftParenthesisCount==1 && $nRightParenthesisCount==-1)
+         if($nLeftParenthesisCount==1 && $nRightParenthesisCount==-1)					//当左边小括号计数器为1而右边小括号计数器为-1时
          {
-echo "有效搜索\n";
+            //echo "有效搜索\n";
             $nLeftLoop++;//前面while是先用再递减，所以多减了一次
             $strPrefix=substr($strLogicExpression,0,$nLeftLoop);
             $strSuffix=substr($strLogicExpression,$nRightLoop);
 
-echo "DDDDDDDDDDDDDD: [$strLogicExpression] L: $nLeftLoop  [".$strLogicExpression[$nLeftLoop]."] R: $nRightLoop  [".$strLogicExpression[$nRightLoop-1]."] \n";
+            //echo "DDDDDDDDDDDDDD: [$strLogicExpression] L: $nLeftLoop  [".$strLogicExpression[$nLeftLoop]."] R: $nRightLoop  [".$strLogicExpression[$nRightLoop-1]."] \n";
 
             $nLeftLoop++;//为过滤掉“(”，所以又要增一次。
 
@@ -196,8 +196,6 @@ echo "DDDDDDDDDDDDDD: [$strLogicExpression] L: $nLeftLoop  [".$strLogicExpressio
             $strSubExpression=trim(substr($strLogicExpression,$nLeftLoop,$nRightLoop-$nLeftLoop));//长度多减1，去掉后面“)”稳定性存疑。
 //这里一直有问题，不稳定。
 
-
-echo "SUUUBBBBBBBB: $strSubExpression \n";
             if( preg_match_all("/ID_([^^]*?)_DI/",$strSubExpression)!=1)
             {
                //仅剩下ID_xxxxxxxxxxxxxxxxxxx_DI的话，就不再拆分了。
@@ -208,21 +206,7 @@ echo "SUUUBBBBBBBB: $strSubExpression \n";
                $strLogicExpression=$strPrefix." ".$strSubExpUID." ".$strSuffix;
                $nStrLength=strlen($strLogicExpression);
             }
-            //else if(preg_match_all("/+|-|*|\//",$strSubExpression)!=1)
-            //{
-
-            //   $strSubExpUID=UID();
-            //   $arrSubLogicExpression[$strSubExpUID]=$strSubExpression;
-
-            //   $strLogicExpression=$strPrefix." ".$strSubExpUID." ".$strSuffix;
-            //   $nStrLength=strlen($strLogicExpression);
-            //}
          }
-         ////echo $strSubExpression."\n";
-         ////echo "LF: $nLeftParenthesisCount RF:$nRightParenthesisCount \n";
-        // //echo "( $nLeftLoop , $nRightLoop )\n";
-
-////echo "=====================================================================\n";
       }
 
       /******************************************************************************************
@@ -244,32 +228,17 @@ echo "SUUUBBBBBBBB: $strSubExpression \n";
 
       ******************************************************************************************/
 
-      //var_dump($m);
-     ////echo "1最终表达式为：".$strLogicExpression."\n";
-      //var_dump($arrSubLogicExpression);
-
-
       $n= preg_match_all("/&&|\|\|/",$strLogicExpression,$m,PREG_OFFSET_CAPTURE);
       $nStrLength=strlen($strLogicExpression);
 
-     // print_r($m);
-
-
-
       for($i=$n-1;$i>=0;$i--)//倒序处理
       {
-         ////echo "dddddddd  $i  dddddddddddd\n";
-         ////echo "\n\n\nData:\n";
-         //print_r($m[0][$i]);
-         ////echo "本轮数据为：$strLogicExpression \n";
-         ////echo "本轮数据长为：$nStrLength \n";
-
          //find right
-         $nLeftLoop			=$nRightLoop			=$m[0][$i][1];
+         $nLeftLoop	=$nRightLoop				=$m[0][$i][1];
          $bLeftParenthesisFound	=$bRightParenthesisFound	=false;
-         $nRightLoop+=2;								//||和&&各是两字符，要再跳过一个字符。
-         $nLeftLoop-=1;								//||和&&各是两字符，要再跳过一个字符。
-         $nLeftParenthesisCount	=$nRightParenthesisCount		=0;
+         $nRightLoop						+=2;					//||和&&各是两字符，要跳过2个字符。
+         $nLeftLoop						-=1;					//||和&&各是两字符，要跳过1个字符。
+         $nLeftParenthesisCount	=$nRightParenthesisCount	=0;
 
          $bLogicExpressionFound=false;
 
@@ -290,7 +259,6 @@ echo "SUUUBBBBBBBB: $strSubExpression \n";
          }
 
          ////echo "右侧搜索到：".$nRightLoop."\n";
-
 
          if($bLogicExpressionFound) continue;
 
@@ -328,78 +296,24 @@ echo "SUUUBBBBBBBB: $strSubExpression \n";
             $nLeftLoop++;//为过滤掉“(”，所以又要增一次。
 
             $strSubExpression=trim(substr($strLogicExpression,$nLeftLoop,$nRightLoop-$nLeftLoop-1));//长度多减1，去掉后面“)”
-////echo " $strPrefix | $strSubExpression |  $strSuffix\n";
-
-//var_dump(preg_match_all("/ID_([^^]*?)_DI/",$strSubExpression,$x));
-/*
-            if( preg_match_all("/ID_([^^]*?)_DI/",$strSubExpression,$x)!=1)
-            {
-               //echo "仅剩下ID_xxxxxxxxxxxxxxxxxxx_DI的话，就不再拆分了。";
 
                $strSubExpUID=UID();
                $arrSubLogicExpression[$strSubExpUID]=$strSubExpression;
 
                $strLogicExpression=$strPrefix." ".$strSubExpUID." ".$strSuffix;
-
-//echo PHP_EOL.$strLogicExpression.PHP_EOL;
                $nStrLength=strlen($strLogicExpression);
-            }
-            else  if(preg_match_all("/\+|\-|\*|\/|\%/",$strSubExpression,$x)!=1)
-            {
-//echo "+-* /\n";
-               ////echo "-------- $strSubExpression ------\n";
-               $strSubExpUID=UID();
-               $arrSubLogicExpression[$strSubExpUID]=$strSubExpression;
-
-               $strLogicExpression=$strPrefix." ".$strSubExpUID." ".$strSuffix;
-               $nStrLength=strlen($strLogicExpression);
-               ////echo "遇到IDDI了:\n";
-               ////echo $strSubExpression."\n";
-               ////echo "NEW expression: $strPrefix $strSubExpUID $strSuffix \n ";
-            }
-            else
-            {
-*/
-               ////echo "-------- $strSubExpression ------\n";
-               $strSubExpUID=UID();
-               $arrSubLogicExpression[$strSubExpUID]=$strSubExpression;
-
-               $strLogicExpression=$strPrefix." ".$strSubExpUID." ".$strSuffix;
-               $nStrLength=strlen($strLogicExpression);
-               ////echo "遇到IDDI了:\n";
-               ////echo $strSubExpression."\n";
-               ////echo "NEW expression: $strPrefix $strSubExpUID $strSuffix \n ";
-
-           // }
-////echo " $i : $strSubExpression \n";
 
          }
-         ////echo $strSubExpression."\n";
-         ////echo "LF: $nLeftParenthesisCount RF:$nRightParenthesisCount \n";
-         ////echo "( $nLeftLoop , $nRightLoop )\n";
-         ////echo "dddddddddddddddddddd $n ddddddddddddddd\n";
       }
-
-
-      ////echo "\n---------------------------------------\n";
-      ////echo "2最终表达式为：".$strLogicExpression."\n";
-      //var_dump($arrSubLogicExpression);
-      ////echo "\n---------------------------------------\n";
 
       $strLogicExpression=trim($strLogicExpression);
       if(isset($arrSubLogicExpression[$strLogicExpression]))
       {
-////echo "replace.";
           $strTemp=$strLogicExpression;
           $strLogicExpression=$arrSubLogicExpression[$strLogicExpression];
           unset($arrSubLogicExpression[$strTemp]);
       }
 
-      //var_dump($m);
-      ////echo "\n---------------------------------------\n";
-      ////echo "2最终表达式为：".$strLogicExpression."\n";
-      //var_dump($arrSubLogicExpression);
-      ////echo "\n---------------------------------------\n";
       return Array($strLogicExpression,$arrSubLogicExpression,$arrCalledFunction);
    }
 
@@ -461,10 +375,6 @@ echo "SUUUBBBBBBBB: $strSubExpression \n";
 
       ******************************************************************************************/
 
-
-echo "++++++++++++++++++++++++++++++>\n";
-print_r($strLogicExpression);
-echo "<++++++++++++++++++++++++++++++\n";
       $arrResult=Array();
 
       //对主逻辑表达式进行处理
@@ -519,7 +429,6 @@ echo "<++++++++++++++++++++++++++++++\n";
       if($arrSubLogicExpression!=NULL){
          foreach($arrSubLogicExpression as $key=>$value)					//对子逻辑表达式进行处理
          {
-
             /******************************************************************************************
 
             对每个子逻辑表达式，也执行相同的处理，数据存入$arrResult[1]中。
@@ -577,19 +486,71 @@ echo "<++++++++++++++++++++++++++++++\n";
             $arrSplittedExpression = preg_split("/(\&\&)|(\|\|)|(>)|(<)|(==)|(!=)|(!)/",$value,-1,PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);//将字符串表达式转成数组
             $arrData=$this->exp2RPN($arrSplittedExpression);					//转换为逆波兰表达式
             $arrResult2=$this->toScratchJSON($arrData);
+
+
             $nResult2Length=count($arrResult2);
 
             $arrResult2[$nResult2Length-1][1]=$key;			//在子逻辑表达式被解析后，原有的UID关系会被重置，此时，需要将最后一组的UID改为当前的$key。
 
+
+            /******************************************************************************************
+
+               对于只有一个大于、等于、小于的判断表达式，会出现arrResult[0]为空的处理结果，此时，需要把函数调用从原本的[1]改为[0]。
+
+               例如：
+                   if(  ( 1 >  ( 2 +  ( 3 * 我的变量 )  )  )   ){}
+
+               解析结果为：
+                Array
+                (
+                    [0] => Array
+                        (
+                        )
+                    [1] => Array
+                        (
+                            [0] => Array
+                                (
+                                    [0] => >
+                                    [1] => ID_PSdkA@`N?oZq3@H6GKVf_DI
+                                    [2] => 1
+                                    [3] => 2 +(3 * 我的变量)
+                                )
+                        )
+                )
+
+                更正为：
+                Array
+                (
+                    [0] => Array
+                        (
+                            [0] => Array
+                                (
+                                    [0] => >
+                                    [1] => ID_PSdkA@`N?oZq3@H6GKVf_DI
+                                    [2] => 1
+                                    [3] => 2 +(3 * 我的变量)
+                                )
+                        )
+                )
+
+                主要原因是处理该结果的算法，没有针对第一种情况设计相应的算法，为了减少算法的复杂度，所以在这里做简单调整。
+
+            ******************************************************************************************/
+
+
+            $nOffset=empty($arrResult[0])?0:1;					//如果[0]无数据，就把当前本应保存到[1]的数据保存到[0]。
+
             foreach($arrResult2 as $key=>$value)				//追加装配数据到$arrResult[1]中
             {
-               $arrResult[1][]=$value;
+               $arrResult[$nOffset][]=$value;
             }
          }
       }
       
-      echo "~~~~~~~~~~build~~~~~~~最终结果~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-      print_r($arrResult);
+      //echo "~~~~~~~~~~build~~~~~~~最终结果~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+      //print_r($arrResult);
+
+      //      if(empty($arrResult[0]) && empty($arrResult[1])) return NULL;
 
       return $arrResult;
    }
@@ -598,31 +559,72 @@ echo "<++++++++++++++++++++++++++++++\n";
    //RPN初始化后，可以多次调用，所以表达式的初始化，没有放在类初始化里。
    public function init($strLogicExpression)
    {
-      //针对括号进行预处理
+      /****************************************************************************
+
+          针对括号中的子逻辑表达式,进行预处理。
+
+          调用：
+              preProcessingSubLogicExpression()
+
+          例如：
+              1+2*3-4>5+6*7-8 && (9*10-11<12-13+14 || random(1,2)<round(1.3)) && floor(1.5)<ceiling(1.5) || sensing_mousedown()
+
+          处理后（$strLogicExpression）：
+              1+2*3-4>5+6*7-8 &&ID_jLn7aUrhM}HOo:lcBjwY_DI &&ID_FsXMYTg5kQgrA?z[T~oh_DI <ID_7yuafb4ynS13hX.`3TqH_DI||ID_GF:R.vGH1a;[Yo~wyYSB_DI
+
+          函数调用为（$arrCalledFunction）：
+              [2] => Array
+                  (
+                      [0] => Array
+                          (
+                              [0] => random
+                              [1] => ID_@H_]{ev0bl7s3VX;:@kl_DI
+                              [2] => 1,2
+                          )
+                      [1] => Array
+                          (
+                              [0] => round
+                              [1] => ID_C`KF1?Z_$zj`Ga{Y1}i}_DI
+                              [2] => 1.3
+                          )
+                      [2] => Array
+                          (
+                              [0] => floor
+                              [1] => ID_FsXMYTg5kQgrA?z[T~oh_DI
+                              [2] => 1.5
+                          )
+                      [3] => Array
+                          (
+                              [0] => ceiling
+                              [1] => ID_7yuafb4ynS13hX.`3TqH_DI
+                              [2] => 1.5
+                          )
+                      [4] => Array
+                          (
+                              [0] => sensing_mousedown
+                              [1] => ID_GF:R.vGH1a;[Yo~wyYSB_DI
+                              [2] => 
+                          )
+                  )
+
+      ****************************************************************************/
       list($strLogicExpression,$arrSubLogicExpression,$arrCalledFunction)=$this->preProcessingSubLogicExpression($strLogicExpression);
-
-////echo '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$'.PHP_EOL;
-////echo "preProcessingSubLogicExpression:\n";
-//var_dump($arrCalledFunction);
-//var_dump($strLogicExpression);
-//var_dump($arrSubLogicExpression);
-////echo "以上拆分并没有问题。 strLogicExpression（ $strLogicExpression ）是所有积木的最底层数据。".PHP_EOL;
-
 
       //如果只有一组子串，
       //将子串数据作为$strLogicExpression，然后$arrSubLogicExpression为NULL
-      if($arrSubLogicExpression!=NULL && count($arrSubLogicExpression)==1)// && $arrSubLogicExpression[0][1]==$strLogicExpression)		//处理后的字符串跟函数调用的UID相同
+      if($arrSubLogicExpression!=NULL && count($arrSubLogicExpression)==1)		//处理后的字符串跟函数调用的UID相同
       {
          /****************************************************************************
-             如果表达式整个都被()包围，则会出现整个表达式都被划分为子逻辑串，
+             如果表达式整个都被()包围，则会出现整个表达式都被划分为子逻辑串。
              例如：
                  (  ( operator_random( operator_random( 4 , 10 )  , 100 )  > 1 )  &&  ( operator_random( operator_random( 4 , 10 )  , 100 )  > 1 )  ) 
 
              经过函数调用和子逻辑字符串处理后：
                  ID_h113zRFIMLp`A6mPVG1G_DI 
+
              子逻辑字符串数据为：
 
-                  Array(1) 
+                  Array
                   (
                      ["ID_h113zRFIMLp`A6mPVG1G_DI"] => ( ID_M]_S@O2HoxwJpgm`bYxA_DI > 1)&&( ID_@4Y5#9D2_lVD1{pA$1OT_DI > 1)
                   )
@@ -632,8 +634,6 @@ echo "<++++++++++++++++++++++++++++++\n";
 
          ****************************************************************************/
 
-         //$key=array_keys($arrSubLogicExpression);
-         //if($key[0]==$strLogicExpression)
          if(isset($arrSubLogicExpression[$strLogicExpression]))
          {
             $strLogicExpression=$arrSubLogicExpression[$strLogicExpression];
@@ -642,8 +642,12 @@ echo "<++++++++++++++++++++++++++++++\n";
       }
 
 
+echo "333333333333333333333333333\n";
+var_dump($strLogicExpression);
       if(count($arrCalledFunction)==1 && $arrCalledFunction[0][1]==$strLogicExpression)		//处理后的字符串跟函数调用的UID相同
       {
+echo "44444444444444444444\n";
+
           /****************************************************************************
               这里只有一个被预处理的函数，也就不存在子逻辑运算字符串
 
@@ -666,21 +670,27 @@ echo "<++++++++++++++++++++++++++++++\n";
           ****************************************************************************/
 
           $arrResult[2]=$arrCalledFunction;
-          return $arrResult;
-      }
+          $arrResult[3]=$strLogicExpression;
 
-//print_r($strLogicExpression);
-//print_r($arrSubLogicExpression);
+          if($this->isLogicFunctionCall($arrCalledFunction[0][0]))
+          {
+             return $arrResult;
+          }
+          else{
+             return Array(NULL,NULL,$arrCalledFunction,NULL);//[0]和[1]置为NULL，表示输入的字符串不含逻辑表达式数据。
+          }
+      }
 
       $arrResult=$this->build($strLogicExpression,$arrSubLogicExpression);
 
-//print_r($arrResult);
+      //if($arrResult==NULL) return NULL;
       //将函数调用追加到$arrResult[2]中。
       $nCalledFunctionLength=count($arrCalledFunction);		//倒序插入，这样每个被拆分的preAttach，都能准确地找到parentUID
-      for($i=$nCalledFunctionLength-1;$i>=0;$i--)
-      {
-         $arrResult[2][]=$arrCalledFunction[$i];
-      }
+      //for($i=$nCalledFunctionLength-1;$i>=0;$i--)
+      //{
+      //   $arrResult[2][]=$arrCalledFunction[$i];
+      //}
+      $arrResult[2]=$arrCalledFunction;				//不需要倒序插入，当前状态就是最佳的，在生成时倒序处理即可。
       /********************************************************
 
          将函数调用关系数据追加到$arrResult[1]后，整个对逻辑字符串的转换算法就结束了。
@@ -775,9 +785,16 @@ echo "<++++++++++++++++++++++++++++++\n";
 
       ********************************************************/
 
-      ////echo "\n===========================最终结果======================\n";
-      //print_r($arrResult);
 
+      $arrResult[3]=$strLogicExpression;		//已经将函数调用替换掉的表达式
+
+echo "\n**********************logic**************************************************";
+echo "\n************************************************************************";
+echo "\n************************************************************************\n";
+print_r($arrResult);
+echo "************************************************************************";
+echo "\n************************************************************************";
+echo "\n************************************************************************\n";
       return $arrResult;
    }
 
@@ -799,18 +816,18 @@ echo "<++++++++++++++++++++++++++++++\n";
       $expression = trim($expression);
       $length = strlen($expression);
     
-      // 检查表达式是否被括号包围
+      //检查表达式是否被括号包围
       $isWrapped = false;
       if ($expression[0] === '(' && $expression[$length - 1] === ')') {
          $isWrapped = true;
       }
     
-      // 如果表达式没有被括号包围，直接返回
+      //如果表达式没有被括号包围，直接返回
       if (!$isWrapped) {
          return $expression;
       }
     
-      // 检查括号是否匹配且内部表达式是独立的
+      //检查括号是否匹配且内部表达式是独立的
       $stack = [];
       $isIndependent = true;
     
@@ -826,7 +843,7 @@ echo "<++++++++++++++++++++++++++++++\n";
             }
             array_pop($stack);
             
-            // 如果括号不在最外层且有运算符在括号外，则不是独立表达式
+            //如果括号不在最外层且有运算符在括号外，则不是独立表达式
             if (empty($stack) && $i < $length - 1) {
                 $nextChar = $expression[$i + 1];
                 if (!in_array($nextChar, ['+', '-', '*', '/', ')', ' '])) {
@@ -834,7 +851,7 @@ echo "<++++++++++++++++++++++++++++++\n";
                 }
             }
          } else if (empty($stack)) {
-            // 如果在最外层遇到运算符，则不是独立表达式
+            //如果在最外层遇到运算符，则不是独立表达式
             if (in_array($char, ['+', '-', '*', '/'])) {
                 $isIndependent = false;
                 break;
@@ -1119,7 +1136,7 @@ echo "<++++++++++++++++++++++++++++++\n";
                   }
                   else							//双目操作
                   {
-                     if($val2=="") $val2="错误：表达式不完整。";
+                     //if($val2=="") $val2="错误：表达式不完整。";
                      $jsonArr[]=Array($_rpnexp[$i], $uid, $val2, $val1);  //opcode,uid,arg1,arg2
                   }
                   switch($_rpnexp[$i])
