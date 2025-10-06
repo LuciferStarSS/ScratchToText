@@ -80,34 +80,34 @@ class Scratch3ToC
 
       if(isset($BlockID->{"name"})) //传入的是一个json数据，而不是UID，这个是一个异常数据。
       {
-/***********************************************
-遇到这么一例奇怪的数据。
-按照正常操作，当“且”的两个参数都去掉后，inputs里应该为空，但这份数据里，OPERAND1和OPERAND2都有，只是block和shadow指向了null。
+         /***********************************************
+            遇到这么一例奇怪的数据。
+            按照正常操作，当“且”的两个参数都去掉后，inputs里应该为空，但这份数据里，OPERAND1和OPERAND2都有，只是block和shadow指向了null。
 
-{
-    "opcode": "operator_and",
-    "next": null,
-    "parent": null,
-    "inputs": {
-        "OPERAND1": {
-            "name": "OPERAND1",
-            "block": null,
-            "shadow": null
-        },
-        "OPERAND2": {
-            "name": "OPERAND2",
-            "block": null,
-            "shadow": null
-        }
-    },
-    "fields": {},
-    "shadow": false,
-    "topLevel": true,
-    "x": 1827,
-    "y": 549,
-    "id": "@p5iW6^]LPnDyX%EZy9R"
-}
-***********************************************/
+            {
+                "opcode": "operator_and",
+                "next": null,
+                "parent": null,
+                "inputs": {
+                    "OPERAND1": {
+                        "name": "OPERAND1",
+                        "block": null,
+                        "shadow": null
+                    },
+                    "OPERAND2": {
+                        "name": "OPERAND2",
+                        "block": null,
+                        "shadow": null
+                    }
+                },
+                "fields": {},
+                "shadow": false,
+                "topLevel": true,
+                "x": 1827,
+                "y": 549,
+                "id": "@p5iW6^]LPnDyX%EZy9R"
+            }
+         ***********************************************/
          return -1;
       }
 
@@ -863,8 +863,6 @@ class Scratch3ToC
             break;
 
          case "operator_add":							//加法
-
-print_r($Block);
             $this->codeInC[$this->currentType][]=" ( ";
             $this->convertCode($Block->{"inputs"}->{"NUM1"});
             $this->codeInC[$this->currentType][]=" + ";
@@ -956,33 +954,41 @@ print_r($Block);
             break;
 
          case "operator_mathop":						//数学函数
-            //if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="10 ^")				//10的n次方
-            //{
-            //   $this->codeInC[$this->currentType][]=$Block->{"opcode"}.'( "10 ^" ,';
-            //   $this->convertCode($Block->{"inputs"}->{"NUM"});
-            //   $this->codeInC[$this->currentType][]=" ) ";
-            //}
-            //else if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="e ^")				//e的n次方
-            //{
-            //   $this->codeInC[$this->currentType][]=$Block->{"opcode"}.'( "e ^" ,';
-            //   $this->convertCode($Block->{"inputs"}->{"NUM"});
-            //   $this->codeInC[$this->currentType][]=" ) ";
-            //}
-            //else
-            //{
-            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."(";
-            $this->codeInC[$this->currentType][]='"'.$Block->{"fields"}->{"OPERATOR"}->{"value"}.'"';//其它函数名
-            $this->codeInC[$this->currentType][]=",";
-            $this->convertCode($Block->{"inputs"}->{"NUM"});
-            $this->codeInC[$this->currentType][]=" ) ";
-            //}
+            if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="sin")				//sin这个关键词，在文本代码转积木时，会跟sensing_混淆，所以改为sinf。
+            {
+               $this->codeInC[$this->currentType][]='sinf(';
+               $this->convertCode($Block->{"inputs"}->{"NUM"});
+               $this->codeInC[$this->currentType][]=" ) ";
+            }
+            else if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="10 ^")				//10的n次方
+            {
+               $this->codeInC[$this->currentType][]=$Block->{"opcode"}.'( "10 ^" ,';
+               $this->convertCode($Block->{"inputs"}->{"NUM"});
+               $this->codeInC[$this->currentType][]=" ) ";
+            }
+            else if($Block->{"fields"}->{"OPERATOR"}->{"value"}=="e ^")				//e的n次方
+            {
+               $this->codeInC[$this->currentType][]=$Block->{"opcode"}.'( "e ^" ,';
+               $this->convertCode($Block->{"inputs"}->{"NUM"});
+               $this->codeInC[$this->currentType][]=" ) ";
+            }
+            else
+            {
+//            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."(";
+//            $this->codeInC[$this->currentType][]='"'.$Block->{"fields"}->{"OPERATOR"}->{"value"}.'"';//其它函数名
+//            $this->codeInC[$this->currentType][]=",";
+               $this->codeInC[$this->currentType][]=$Block->{"fields"}->{"OPERATOR"}->{"value"}."(";
+               $this->convertCode($Block->{"inputs"}->{"NUM"});
+               $this->codeInC[$this->currentType][]=" ) ";
+            }
             if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
                $this->codeInC[$this->currentType][]=" \n ";
 
             break;
 
          case "operator_random":						//随机数
-            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."( ";
+//            $this->codeInC[$this->currentType][]=$Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][]="random( ";
             $this->convertCode($Block->{"inputs"}->{"FROM"});
             $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"TO"});
@@ -1013,7 +1019,8 @@ print_r($Block);
             break;
 
          case "operator_join":							//连接
-            $this->codeInC[$this->currentType][] = $Block->{"opcode"}."( ";
+//            $this->codeInC[$this->currentType][] = $Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][] = "join( ";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"STRING1"});
             $this->codeInC[$this->currentType][] = " ,";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"STRING2"});
@@ -1024,7 +1031,8 @@ print_r($Block);
          break;
 
          case "operator_round":							//四舍五入
-            $this->codeInC[$this->currentType][] = $Block->{"opcode"}."( ";
+//            $this->codeInC[$this->currentType][] = $Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][] = "round( ";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"NUM"});
             $this->codeInC[$this->currentType][] = " )";
             if($Block->{"parent"}==NULL)					//如果没有parent，就是独立的单独一个积木，那么后面加回车。
