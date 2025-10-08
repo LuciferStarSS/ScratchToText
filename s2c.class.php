@@ -659,7 +659,7 @@ class Scratch3ToC
             }
             $this->codeInC[$this->currentType][]= $this->padding()."else{\n";
             $this->nLeftPadding++;
-            if(isset($Block->{"inputs"}->{"SUBSTACK"}) && $Block->{"inputs"}->{"SUBSTACK2"}->{"block"}!=NULL)	//检测包含的子积木块
+            if(isset($Block->{"inputs"}->{"SUBSTACK2"}) && $Block->{"inputs"}->{"SUBSTACK2"}->{"block"}!=NULL)	//检测包含的子积木块
             {
                $this->convertFromRest($Block->{"inputs"}->{"SUBSTACK2"});
             }
@@ -1708,3 +1708,4 @@ class Scratch3ToC
    }
 }
 ?>
+
