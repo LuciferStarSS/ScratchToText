@@ -402,9 +402,9 @@ class CToScratch3
       "control_start_as_clone"			=>0,
       "event_whenstageclicked"			=>0,
       "chattingroom_whenChatMessageComes"	=>0,
-      "control_wait_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
-      "control_repeat_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
-      "control_repeat"				=>0,//有包含的也不能删除next，除非后面真的没代码了。
+     // "control_wait_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
+     // "control_repeat_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
+     // "control_repeat"				=>0,//有包含的也不能删除next，除非后面真的没代码了。
    );
 
    /*************************************************************************************************************************
@@ -1063,7 +1063,7 @@ class CToScratch3
                      $n++;
                      $nBraceCounter=1;							//跳过(，置小括号计数器为1
 
-                     $nCheckCondition=$n;
+                     $nCheckChildFunc=$n;
                      while($n<$nRawSplitCodeDataLength-1)				//一直扫描到数组末尾
                      {
                         $strCode=trim($arrRawSplitCodeData[++$n]);			//取数据
@@ -1075,7 +1075,7 @@ class CToScratch3
                            $arrCodeSection[$nSECTION][] = $strCode;			//非空，就保存，过滤掉空行。
                      }
 
-                     if($n-$nCheckCondition>2)
+                     if($n-$nCheckChildFunc>1)
                         $arrCodeSection[$nSECTION][] = '';				//补}，代码分支获取完毕
 
                      $arrCodeSection[$nSECTION][] = '}';				//补}，代码分支获取完毕
@@ -1316,6 +1316,7 @@ class CToScratch3
 
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
+echo "1REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      $jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
@@ -1769,6 +1770,7 @@ class CToScratch3
                   $jsonBlock=json_decode($lastBlock);
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
+echo "2REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      $jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
@@ -1870,6 +1872,7 @@ class CToScratch3
                      $jsonBlock=json_decode($lastBlock);
                      if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                      {
+echo "3REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                         $jsonBlock->{'next'}=NULL;
                         array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
@@ -1954,7 +1957,7 @@ class CToScratch3
              //这个非HAT积木，比较特别
             //具有包含作用的积木  if...then... if...else...  do...while,以及自定义模块
             case "do":
-
+print_r($arrCode);
 
                $thisUID=array_pop($this->UIDS);			//出栈：thisUID
                $parentUID=array_pop($this->UIDS);		//出栈：parentUID
@@ -1969,28 +1972,34 @@ class CToScratch3
                $i+=2;						//当前为do，$i++为{
                //echo $i."ffffffffff\n";
                $childFunc=Array();
-               $nCheckCondition=$i;
+               $nCheckChildFunc=$i;
                while($i<$nCodeLength-1)
                {
                   $strCode=trim($arrCode[$i++]);
                   if($strCode=="{")    $nBraceCounter++;
                   if($strCode=="}")    $nBraceCounter--;
                   if($nBraceCounter==0) break;		//计数器回到默认状态，说明这个循环可以结束了。
-                  if($strCode) $childFunc[]=$strCode;
+                  $childFunc[]=$strCode;
                }
 
-               $bWAIT=true;					//区分control_wait_until和control_repeat_until
-               if($i-$nCheckCondition>1)
+echo "wait: $i  $nCheckChildFunc ".($i-$nCheckChildFunc)."\n";
+               $bWAIT=false;					//区分control_wait_until和control_repeat_until
+               if($i-$nCheckChildFunc==1)
                {
-                  $bWAIT=false;
+                  $bWAIT=true;
+                  $childFunc=Array();
                }
 
                $i+=2;						//$i当前为while  $i++为(
 
                $substackUID="";
 
-               if($childFunc!=NULL && count($childFunc)>0)
+
+print_r($childFunc);
+echo "childfun\n";
+               if(!$bWAIT && !empty($childFunc[0]))//$childFunc!=NULL && count($childFunc)>0)
                {
+
                   $substackUID=UID();
                   array_push($this->UIDS,$thisUID);		//入栈：thisUID	//将进入下一层，需要多压入一次，以便在返回时仍保留一份数据
                   array_push($this->UIDS,$substackUID);		//入栈：nextUID
@@ -2004,12 +2013,14 @@ class CToScratch3
                   $jsonBlock=json_decode($lastBlock);
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
+echo "4REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      $jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
                   else
                      array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
                }
+
 
                $strCondition="";
                $nBraceCounter=1;
@@ -2045,9 +2056,9 @@ class CToScratch3
                      $arrMainProcedure=$this->rpn_logic->init($strCondition);	//进行逻辑表达式解析
                      if($arrMainProcedure!=NULL)
                      {
-
                         //$mpCounter=count($arrMainProcedure);
 
+echo " parsedLLLLLLLLLLLLLLLLLLL $thisUID\n";
                         $arrChildUID=$this->parseLogicExpression($arrMainProcedure,$thisUID);	//头部积木UID要用。
 
                         //构建条件数据
@@ -2067,29 +2078,32 @@ class CToScratch3
 
                   if($bWAIT)					//等待
                   {
+
+echo "wait next uid: $nextUID \n";
                      //$repeat_opcode="control_wait_until";
                      array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_wait_until",    "inputs": {  '.$condition_input.'  },    "fields": {},    "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}');
                   }
                   else						//重复执行直到
                   {
                      //$repeat_opcode="control_repeat_until";
-                     array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_repeat_until",    "inputs": { "SUBSTACK": { "name": "SUBSTACK",  "block": "'.$substackUID.'", "shadow": null }, '.$condition_input.' }, "fields": {}, "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}');
+                     array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_repeat_until",    "inputs": { "SUBSTACK": { "name": "SUBSTACK",  "block": '.($substackUID==""?'null':'"'.$substackUID.'"').', "shadow": null }, '.$condition_input.' }, "fields": {}, "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}');
                   }
                }
 
-
+/*
                $lastBlock=array_pop($this->Blockly);
                if($lastBlock){
                   $jsonBlock=json_decode($lastBlock);
                   if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
                   {
+echo "5REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      $jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
                   else
                      array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
                }
-
+*/
                array_pop($this->UIDS);	//+
                array_pop($this->UIDS);				//出栈：parentUID	//已返回，需要将上一个积木的thisUID（即当前的parentUID）删除
                array_push($this->UIDS,$thisUID);//+
@@ -2120,8 +2134,6 @@ class CToScratch3
                $nextUID=UID();
                $TOPLEVELSTATUS= $this->bTOPLEVEL;
                $this->bTOPLEVEL="false";			//后续代码的toplevel必为false，true只在deal第一次进入时设置。
-
-
 
 
                $arrChildUID=Array();
@@ -2368,6 +2380,7 @@ class CToScratch3
                      $jsonBlock=json_decode($lastBlock);
                      if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                      {
+echo "6REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                         $jsonBlock->{'next'}=NULL;
                         array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
@@ -2447,6 +2460,7 @@ class CToScratch3
                      $jsonBlock=json_decode($lastBlock);
                      if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                      {
+echo "7REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                         $jsonBlock->{'next'}=NULL;
                         array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
@@ -2483,6 +2497,7 @@ class CToScratch3
                   $jsonBlock=json_decode($lastBlock);
                   if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
                   {
+echo "8REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      $jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
@@ -2600,6 +2615,7 @@ class CToScratch3
                      $jsonBlock=json_decode($lastBlock);
                      if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                      {
+echo "9REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                         $jsonBlock->{'next'}=NULL;
                         array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
@@ -2635,6 +2651,7 @@ class CToScratch3
                   $jsonBlock=json_decode($lastBlock);
                   if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
                   {
+echo "10REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      $jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
