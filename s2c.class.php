@@ -617,6 +617,7 @@ class Scratch3ToC
                $this->convertCode( $Block->{"inputs"}->{"CONDITION"});
             }
             $this->codeInC[$this->currentType][]= ");\n";
+
             break;
 
          case "control_if":							//如果那么
@@ -1603,7 +1604,6 @@ class Scratch3ToC
       $arrParentBlocks=Array();
       if($this->arrBlockID!=NULL)
       {
-         //var_dump($this->arrBlockID);
          $arrRestBlockID=$this->arrBlockID;
          foreach($arrRestBlockID as $BlockID=>$value)
          {
@@ -1687,6 +1687,7 @@ class Scratch3ToC
       $this->currentType=3;
       $this->codeInC[$this->currentType][]= "//以下为未关联事件的游离积木\n";
       $arrRestBlockID=$this->getRestParentBlocks();		//剩余零散积木
+
       if(count($arrRestBlockID)>0)
       {
          for($i=0;$i<count($arrRestBlockID);$i++)
@@ -1708,4 +1709,3 @@ class Scratch3ToC
    }
 }
 ?>
-
