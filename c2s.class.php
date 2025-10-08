@@ -1062,6 +1062,8 @@ class CToScratch3
                      $arrCodeSection[$nSECTION][] = '{';				//填入{，开始解析条件(int i=0;i<(10+3);$i++)
                      $n++;
                      $nBraceCounter=1;							//跳过(，置小括号计数器为1
+
+                     $nCheckCondition=$n;
                      while($n<$nRawSplitCodeDataLength-1)				//一直扫描到数组末尾
                      {
                         $strCode=trim($arrRawSplitCodeData[++$n]);			//取数据
@@ -1072,6 +1074,9 @@ class CToScratch3
                         if($strCode)
                            $arrCodeSection[$nSECTION][] = $strCode;			//非空，就保存，过滤掉空行。
                      }
+
+                     if($n-$nCheckCondition>2)
+                        $arrCodeSection[$nSECTION][] = '';				//补}，代码分支获取完毕
 
                      $arrCodeSection[$nSECTION][] = '}';				//补}，代码分支获取完毕
 
@@ -1938,8 +1943,9 @@ class CToScratch3
                //Hats积木块的主信息
                //array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {},  "fields":  { "KEY_OPTION": { "name": "KEY_OPTION",  "value": "'.$keyPressed.'"  } },  "next": "'.$nextuid.'",  "topLevel": true,  "parent": null,  "shadow": false}' );
 
-               array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {'.$strInputs.'},  "fields":  { '.$strFields.' },  "next": "'.$nextUID.'",  "topLevel": true,  "parent": null,  "shadow": false}' );
+               //array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {'.$strInputs.'},  "fields":  { '.$strFields.' },  "next": "'.$nextUID.'",  "topLevel": true,  "parent": null,  "shadow": false}' );
 
+               array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {'.$strInputs.'},  "fields":  { '.$strFields.' },  "next": null,  "topLevel": true,  "parent": null,  "shadow": false}' );
                
 
             break;
@@ -1963,20 +1969,27 @@ class CToScratch3
                $i+=2;						//当前为do，$i++为{
                //echo $i."ffffffffff\n";
                $childFunc=Array();
+               $nCheckCondition=$i;
                while($i<$nCodeLength-1)
                {
-                  $strCode=$arrCode[$i++];
+                  $strCode=trim($arrCode[$i++]);
                   if($strCode=="{")    $nBraceCounter++;
                   if($strCode=="}")    $nBraceCounter--;
                   if($nBraceCounter==0) break;		//计数器回到默认状态，说明这个循环可以结束了。
-                  $childFunc[]=$strCode;
+                  if($strCode) $childFunc[]=$strCode;
                }
-               //$i--;						//退1
+
+               $bWAIT=true;					//区分control_wait_until和control_repeat_until
+               if($i-$nCheckCondition>1)
+               {
+                  $bWAIT=false;
+               }
+
                $i+=2;						//$i当前为while  $i++为(
 
-
                $substackUID="";
-               if(count($childFunc)>0)
+
+               if($childFunc!=NULL && count($childFunc)>0)
                {
                   $substackUID=UID();
                   array_push($this->UIDS,$thisUID);		//入栈：thisUID	//将进入下一层，需要多压入一次，以便在返回时仍保留一份数据
@@ -1984,6 +1997,7 @@ class CToScratch3
 
                   $this->parseSpecialBlocks($childFunc);			//递归处理子程序集
                }
+
 
                $lastBlock=array_pop($this->Blockly);
                if($lastBlock){
@@ -2015,12 +2029,10 @@ class CToScratch3
 
                if($strCondition[0]=='!') $strCondition=substr($strCondition,1);	//去掉一个可能存在的!
 
-echo $strCondition;
                if($strCondition=="1")				//重复执行
                {
                   //$repeat_opcode="control_forever";
-
-                  array_push($this->Blockly,'{    "id": "'.$thisUID.'",    "opcode": "control_forever",    "inputs": {        "SUBSTACK": {            "name": "SUBSTACK",            "block": "'.$substackUID.'",            "shadow": null        }    },    "fields": {},    "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').',  "shadow": false}');
+                  array_push($this->Blockly,'{"id": "'.$thisUID.'","opcode": "control_forever","inputs": {"SUBSTACK": {"name": "SUBSTACK","block": "'.$substackUID.'","shadow": null}},"fields": {},"next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').',  "shadow": false}');
                }
                else
                {
@@ -2041,6 +2053,7 @@ echo $strCondition;
                         //构建条件数据
                         if(isset($arrChildUID[0]) && $arrChildUID[0])
                         {
+
                            $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": "'.$arrChildUID[0].'",    "shadow": null}'; //链接条件数据
                         }
                         else
@@ -2052,16 +2065,29 @@ echo $strCondition;
                   else	//当条件里表达错误时（比如在自定义积木之外使用其参数变量，变量名不存在以及表达式错误：Scratch不支持if(1){}这种表达），显示无条件状态。
                      $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": null,    "shadow": null}'; //condition的shadow为null
 
-                  if(count($childFunc)==0)			//等待
+                  if($bWAIT)					//等待
                   {
                      //$repeat_opcode="control_wait_until";
-                     array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_wait_until",    "inputs": {  '.$condition_input.'  },    "fields": {},    "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').',  "shadow": false}');
+                     array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_wait_until",    "inputs": {  '.$condition_input.'  },    "fields": {},    "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}');
                   }
                   else						//重复执行直到
                   {
                      //$repeat_opcode="control_repeat_until";
-                     array_push($this->Blockly,'{    "id": "'.$thisUID.'",    "opcode": "control_repeat_until",    "inputs": {        "SUBSTACK": {            "name": "SUBSTACK",            "block": "'.$substackUID.'",            "shadow": null        },         '.$condition_input.'    },    "fields": {},    "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').',   "shadow": false}');
+                     array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_repeat_until",    "inputs": { "SUBSTACK": { "name": "SUBSTACK",  "block": "'.$substackUID.'", "shadow": null }, '.$condition_input.' }, "fields": {}, "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}');
                   }
+               }
+
+
+               $lastBlock=array_pop($this->Blockly);
+               if($lastBlock){
+                  $jsonBlock=json_decode($lastBlock);
+                  if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
+                  {
+                     $jsonBlock->{'next'}=NULL;
+                     array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                  }
+                  else
+                     array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
                }
 
                array_pop($this->UIDS);	//+
@@ -2258,8 +2284,7 @@ echo $strCondition;
                         )
 
                      **********************************************************************/
-echo "IFFFFFFFFFFFFFF1\n";
-print_r($arrMainProcedure);
+
                      $arrChildUID=Array(NULL,NULL);//实际只要一个，暂时这样，保证数据结构的完整性。
                      //if(empty($arrMainProcedure[0]) && empty($arrMainProcedure[1]) && empty($arrMainProcedure[2]))	//全为空，则直接创建
                      //{
@@ -2283,8 +2308,7 @@ print_r($arrMainProcedure);
 
                      **********************************************************************/
 
-echo "IFFFFFFFFFFFFF\n";
-print_r($arrChildUID);
+
                      //构建条件数据
                      if(isset($arrChildUID[0]) && $arrChildUID[0])
                      {
@@ -2603,6 +2627,19 @@ print_r($arrChildUID);
                   array_push($this->Blockly,  '{"f":"3","id": "'.$childUID.'", "opcode": "math_whole_number", "inputs": {}, "fields": { "NUM": { "name": "NUM", "value": "'.$nLOOP.'" } }, "next": null, "topLevel": false, "parent": "'.$thisUID.'", "shadow": true}' );//"parent": "'.$thisUID.'", "shadow": true}' );
                	  //重复执行n次的主信息
                   array_push($this->Blockly,  '{"f":"4","id": "'.$thisUID.'", "opcode": "control_repeat", "inputs": { "TIMES": { "name": "TIMES", "block": "'.$childUID.'", "shadow": "'.$childUID.'" } '.$substack.' }, "fields": {}, "next": '.(($nextUID)?'"'.$nextUID.'"':'null').', "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}' );
+               }
+
+
+               $lastBlock=array_pop($this->Blockly);
+               if($lastBlock){
+                  $jsonBlock=json_decode($lastBlock);
+                  if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
+                  {
+                     $jsonBlock->{'next'}=NULL;
+                     array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                  }
+                  else
+                     array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
                }
 
                array_pop($this->UIDS);			//弹出回调中返回的nextuid，舍弃。
