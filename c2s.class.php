@@ -1309,21 +1309,18 @@ class CToScratch3
                   而对于后面不带任何积木的HATS积木，在JSON数据生成时，已做了相应的处理。
 
                ****************************************************************************/
-
                $lastBlock=array_pop($this->Blockly);
                if($lastBlock){
                   $jsonBlock=json_decode($lastBlock);
 
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
-echo "1REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                     //$jsonBlock->{'next'}=NULL;
+                     $jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
                   else
                      array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
                }
-
             }
            
             $arrScratch3Data[2]=$this->Blockly;							//用[2]而不是[$index]，会快点？嗯，差异可以忽略不计。
@@ -2046,25 +2043,35 @@ print_r($arrCode);
 
                   if($strCondition)					//解析存在的判断条件
                   {
-                     $arrMainProcedure=$this->rpn_logic->init($strCondition);	//进行逻辑表达式解析
-                     if($arrMainProcedure!=NULL)
+                     if(isset($this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$strCondition]))	//对自制积木中的本地变量直接引用
                      {
-                        //$mpCounter=count($arrMainProcedure);
-
-//echo " parsedLLLLLLLLLLLLLLLLLLL $thisUID\n";
-                        $arrChildUID=$this->parseLogicExpression($arrMainProcedure,$thisUID);	//头部积木UID要用。
-
-                        //构建条件数据
-                        if(isset($arrChildUID[0]) && $arrChildUID[0])
-                        {
-
-                           $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": "'.$arrChildUID[0].'",    "shadow": null}'; //链接条件数据
-                        }
-                        else
-                           $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": null,    "shadow": null}'; //条件异常
+                        $arrChildUID=Array(UID(),NULL);
+                        array_push($this->Blockly, '{"x":"2","id": "'.$arrChildUID[0].'","opcode":"argument_reporter_boolean","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$strCondition.'"}},"next": null,"topLevel": false,"parent":  "'.$thisUID.'","shadow":false}');
+                        $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": "'.$arrChildUID[0].'",    "shadow": null}'; //链接条件数据
                      }
                      else
-                        $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": null,    "shadow": null}'; //条件异常
+                     {
+                        $arrMainProcedure=$this->rpn_logic->init($strCondition);	//进行逻辑表达式解析
+                        if($arrMainProcedure!=NULL)
+                        {
+                           //$mpCounter=count($arrMainProcedure);
+
+                           //echo " parsedLLLLLLLLLLLLLLLLLLL $thisUID\n";
+                           $arrChildUID=$this->parseLogicExpression($arrMainProcedure,$thisUID);	//头部积木UID要用。
+
+                           //构建条件数据
+                           if(isset($arrChildUID[0]) && $arrChildUID[0])
+                           {
+                              $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": "'.$arrChildUID[0].'",    "shadow": null}'; //链接条件数据
+                           }
+                           else
+                              $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": null,    "shadow": null}'; //条件异常
+                        }
+                        else
+                        {
+                           $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": null,    "shadow": null}'; //条件异常
+                        }
+                     }
                   }
                   else	//当条件里表达错误时（比如在自定义积木之外使用其参数变量，变量名不存在以及表达式错误：Scratch不支持if(1){}这种表达），显示无条件状态。
                      $condition_input=' "CONDITION":{  "name": "CONDITION",   "block": null,    "shadow": null}'; //condition的shadow为null
@@ -2156,6 +2163,9 @@ print_r($arrCode);
 
                if($strCondition)					//解析存在的判断条件
                {
+
+                  //echo "IFFFFFFFFFFFFFFF CONDITION:".$strCondition."\n";
+
                   /********************************************************************************************
                   逻辑表达式：
                    1>我的变量  && 4+3*我的变量>2 || sensing_mousedown()
@@ -2291,16 +2301,16 @@ print_r($arrCode);
                      **********************************************************************/
 
                      $arrChildUID=Array(NULL,NULL);//实际只要一个，暂时这样，保证数据结构的完整性。
-                     //if(empty($arrMainProcedure[0]) && empty($arrMainProcedure[1]) && empty($arrMainProcedure[2]))	//全为空，则直接创建
-                     //{
-                     //   if(isset($this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$strCondition]))	//对自制积木中的本地变量直接引用
-                     //   {
-                     //      $arrChildUID=Array(UID(),NULL);
-                     //      array_push($this->Blockly, '{"x":"1","id": "'.$arrChildUID[0].'","opcode":"argument_reporter_boolean","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$strCondition.'"}},"next": null,"topLevel": false,"parent":  "'.$thisUID.'","shadow":false}');
-                     //   }
-                     //}
-                     //else												//如果参数本身就是一个函数调用，则只有$arrMainProcedure[2]有数据。
-                     $arrChildUID=$this->parseLogicExpression($arrMainProcedure,$thisUID);	//头部积木UID要用。
+                     if(empty($arrMainProcedure[0]) && empty($arrMainProcedure[1]) && empty($arrMainProcedure[2]))	//全为空，则直接创建
+                     {
+                        if(isset($this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$strCondition]))	//对自制积木中的本地变量直接引用
+                        {
+                           $arrChildUID=Array(UID(),NULL);
+                           array_push($this->Blockly, '{"x":"1","id": "'.$arrChildUID[0].'","opcode":"argument_reporter_boolean","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$strCondition.'"}},"next": null,"topLevel": false,"parent":  "'.$thisUID.'","shadow":false}');
+                        }
+                     }
+                     else												//如果参数本身就是一个函数调用，则只有$arrMainProcedure[2]有数据。
+                        $arrChildUID=$this->parseLogicExpression($arrMainProcedure,$thisUID);	//头部积木UID要用。
               
                      /**********************************************************************
                         逻辑表达式积木生成后，返回底部积木的UID
@@ -2312,7 +2322,6 @@ print_r($arrCode);
                         )
 
                      **********************************************************************/
-
 
                      //构建条件数据
                      if(isset($arrChildUID[0]) && $arrChildUID[0])
