@@ -3709,19 +3709,20 @@ echo "before NULL";
                   }
                   else			//参数类型为BOOL，逻辑表达式或逻辑判断函数的处理
                   {
-
-echo "111111111111111111111111\n";
                      $parsedBOOLData=$this->rpn_logic->init($arrArgumentsData[$i]);
+
                      if($parsedBOOLData!=NULL)
                      {
-                        if(isset($parsedBOOLData[0]))					//确认有数据，于是调用parseLogicExpression来处理。
-                        {									//此算法已经可以将rpn_logic拆分出来的包含了主/子逻辑表达式和算术表达式的数据直接全部解析。
-                           $arrChildUID=$this->parseLogicExpression($parsedBOOLData,$thisUID);	//返回最底部积木的UID
+                        $arrChildUID=Array(NULL,NULL);//实际只要一个，暂时这样，保证数据结构的完整性。
+                        if(!empty($parsedBOOLData[0])||!empty($parsedBOOLData[1]) || !empty($parsedBOOLData[2]))	//全为空，则直接创建
+                        {
+                           $arrChildUID=$this->parseLogicExpression($parsedBOOLData,$thisUID);	//头部积木UID要用。
                         }
 
                         $input_str	.='"'.$arrArgUIDS[$arrArgNames[$i]].'": { "name": "'.$arrArgUIDS[$arrArgNames[$i]].'", "block": "'.$arrChildUID[0].'", "shadow": null}';	//name和ID也必须为定义时使用的UID。布尔值参数不设置shadow.
                         $argumentids_str	.='\"'.$arrArgUIDS[$arrArgNames[$i]].'\"';  //调用时这里的UID应该是定义时的UID，这样才能把参数传递过去。
                      }
+                     //else{}  //因为当前是BOOL类型，所以如果rpn_logic解析失败，则不用再进行算术表达式的解析。
                   }
                }
 
