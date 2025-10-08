@@ -1317,7 +1317,7 @@ class CToScratch3
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
 echo "1REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                     $jsonBlock->{'next'}=NULL;
+                     //$jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
                   else
@@ -1872,7 +1872,7 @@ echo "2REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      $jsonBlock=json_decode($lastBlock);
                      if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                      {
-echo "3REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
+echo "3333333333333333REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                         $jsonBlock->{'next'}=NULL;
                         array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
@@ -1946,10 +1946,7 @@ echo "3REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                //Hats积木块的主信息
                //array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {},  "fields":  { "KEY_OPTION": { "name": "KEY_OPTION",  "value": "'.$keyPressed.'"  } },  "next": "'.$nextuid.'",  "topLevel": true,  "parent": null,  "shadow": false}' );
 
-               //array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {'.$strInputs.'},  "fields":  { '.$strFields.' },  "next": "'.$nextUID.'",  "topLevel": true,  "parent": null,  "shadow": false}' );
-
-               array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {'.$strInputs.'},  "fields":  { '.$strFields.' },  "next": null,  "topLevel": true,  "parent": null,  "shadow": false}' );
-               
+               array_push($this->Blockly,'{"id": "'.$thisUID.'", "opcode": "'.$opcode.'",  "inputs": {'.$strInputs.'},  "fields":  { '.$strFields.' },  "next": "'.$nextUID.'",  "topLevel": true,  "parent": null,  "shadow": false}' );
 
             break;
 
@@ -1982,7 +1979,7 @@ print_r($arrCode);
                   $childFunc[]=$strCode;
                }
 
-echo "wait: $i  $nCheckChildFunc ".($i-$nCheckChildFunc)."\n";
+//echo "wait: $i  $nCheckChildFunc ".($i-$nCheckChildFunc)."\n";
                $bWAIT=false;					//区分control_wait_until和control_repeat_until
                if($i-$nCheckChildFunc==1)
                {
@@ -1994,32 +1991,28 @@ echo "wait: $i  $nCheckChildFunc ".($i-$nCheckChildFunc)."\n";
 
                $substackUID="";
 
-
-print_r($childFunc);
-echo "childfun\n";
-               if(!$bWAIT && !empty($childFunc[0]))//$childFunc!=NULL && count($childFunc)>0)
+               if(!$bWAIT && !empty($childFunc[0]))		//是“重复执行直到<条件>”积木，需要解析存在的SUBSTACK
                {
-
                   $substackUID=UID();
                   array_push($this->UIDS,$thisUID);		//入栈：thisUID	//将进入下一层，需要多压入一次，以便在返回时仍保留一份数据
                   array_push($this->UIDS,$substackUID);		//入栈：nextUID
 
                   $this->parseSpecialBlocks($childFunc);			//递归处理子程序集
-               }
 
-
-               $lastBlock=array_pop($this->Blockly);
-               if($lastBlock){
-                  $jsonBlock=json_decode($lastBlock);
-                  if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
-                  {
-echo "4REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                     $jsonBlock->{'next'}=NULL;
-                     array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                  $lastBlock=array_pop($this->Blockly);				//取最后一条积木数据
+                  if($lastBlock){
+                     $jsonBlock=json_decode($lastBlock);			//文本转JSON格式
+                     if($jsonBlock){
+                        $jsonBlock->{'next'}=NULL;				//由于刚才是对SUBSTACK进行了处理，现在SUBSTACK结束，那么SUBSTACK中的最后一块积木的next要置为NULL。
+                        array_push($this->Blockly,json_encode($jsonBlock));	//注意：jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                     }
+                     else
+                        array_push($this->Blockly,$lastBlock);			//即使转JSON格式出错，也原样保存回去，便于后续排错。
                   }
-                  else
-                     array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
+                  //else{}  //无有效数据，就不处理了。
                }
+
+
 
 
                $strCondition="";
@@ -2058,7 +2051,7 @@ echo "4REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                      {
                         //$mpCounter=count($arrMainProcedure);
 
-echo " parsedLLLLLLLLLLLLLLLLLLL $thisUID\n";
+//echo " parsedLLLLLLLLLLLLLLLLLLL $thisUID\n";
                         $arrChildUID=$this->parseLogicExpression($arrMainProcedure,$thisUID);	//头部积木UID要用。
 
                         //构建条件数据
@@ -2079,7 +2072,7 @@ echo " parsedLLLLLLLLLLLLLLLLLLL $thisUID\n";
                   if($bWAIT)					//等待
                   {
 
-echo "wait next uid: $nextUID \n";
+                     //echo "wait next uid: $nextUID \n";
                      //$repeat_opcode="control_wait_until";
                      array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_wait_until",    "inputs": {  '.$condition_input.'  },    "fields": {},    "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}');
                   }
@@ -2089,15 +2082,15 @@ echo "wait next uid: $nextUID \n";
                      array_push($this->Blockly,'{"id": "'.$thisUID.'",    "opcode": "control_repeat_until",    "inputs": { "SUBSTACK": { "name": "SUBSTACK",  "block": '.($substackUID==""?'null':'"'.$substackUID.'"').', "shadow": null }, '.$condition_input.' }, "fields": {}, "next": '.($nextUID?'"'.$nextUID.'"':'null').',  "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}');
                   }
                }
-
 /*
+
                $lastBlock=array_pop($this->Blockly);
                if($lastBlock){
                   $jsonBlock=json_decode($lastBlock);
                   if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
                   {
-echo "5REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                     $jsonBlock->{'next'}=NULL;
+//echo "5REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
+                     //$jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
                   else
@@ -2375,18 +2368,34 @@ echo "5REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
 
                   $this->parseSpecialBlocks($arrChildBlocks1);			//递归处理子程序集
 
+
+
+                  $lastBlock=array_pop($this->Blockly);				//取最后一条积木数据
+                  if($lastBlock){
+                     $jsonBlock=json_decode($lastBlock);			//文本转JSON格式
+                     if($jsonBlock){
+                        $jsonBlock->{'next'}=NULL;				//由于刚才是对SUBSTACK进行了处理，现在SUBSTACK结束，那么SUBSTACK中的最后一块积木的next要置为NULL。
+                        array_push($this->Blockly,json_encode($jsonBlock));	//注意：jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                     }
+                     else
+                        array_push($this->Blockly,$lastBlock);			//即使转JSON格式出错，也原样保存回去，便于后续排错。
+                  }
+                  //else{}  //无有效数据，就不处理了。
+
+/*
                   $lastBlock=array_pop($this->Blockly);
                   if($lastBlock){
                      $jsonBlock=json_decode($lastBlock);
                      if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                      {
-echo "6REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                        $jsonBlock->{'next'}=NULL;
+//echo "6REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
+                        //$jsonBlock->{'next'}=NULL;
                         array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
                      else
                         array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
                   }
+*/
 
                }
 
@@ -2455,18 +2464,17 @@ echo "6REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
 
                   $this->parseSpecialBlocks($arrChildBlocks2);			//递归处理子程序集
 
-                  $lastBlock=array_pop($this->Blockly);
+                  $lastBlock=array_pop($this->Blockly);				//取最后一条积木数据
                   if($lastBlock){
-                     $jsonBlock=json_decode($lastBlock);
-                     if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
-                     {
-echo "7REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                        $jsonBlock->{'next'}=NULL;
-                        array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                     $jsonBlock=json_decode($lastBlock);			//文本转JSON格式
+                     if($jsonBlock){
+                        $jsonBlock->{'next'}=NULL;				//由于刚才是对SUBSTACK进行了处理，现在SUBSTACK结束，那么SUBSTACK中的最后一块积木的next要置为NULL。
+                        array_push($this->Blockly,json_encode($jsonBlock));	//注意：jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
                      else
-                        array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
+                        array_push($this->Blockly,$lastBlock);			//即使转JSON格式出错，也原样保存回去，便于后续排错。
                   }
+                  //else{}  //无有效数据，就不处理了。
 
                }
 
@@ -2497,8 +2505,8 @@ echo "7REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                   $jsonBlock=json_decode($lastBlock);
                   if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
                   {
-echo "8REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                     $jsonBlock->{'next'}=NULL;
+//echo "8REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
+                     //$jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
                   else
@@ -2610,18 +2618,17 @@ echo "8REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
 
                   $this->parseSpecialBlocks($childFunc);			//递归调用处理子程序集
 
-                  $lastBlock=array_pop($this->Blockly);
+                  $lastBlock=array_pop($this->Blockly);				//取最后一条积木数据
                   if($lastBlock){
-                     $jsonBlock=json_decode($lastBlock);
-                     if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
-                     {
-echo "9REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                        $jsonBlock->{'next'}=NULL;
-                        array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                     $jsonBlock=json_decode($lastBlock);			//文本转JSON格式
+                     if($jsonBlock){
+                        $jsonBlock->{'next'}=NULL;				//由于刚才是对SUBSTACK进行了处理，现在SUBSTACK结束，那么SUBSTACK中的最后一块积木的next要置为NULL。
+                        array_push($this->Blockly,json_encode($jsonBlock));	//注意：jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                      }
                      else
-                       array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
+                        array_push($this->Blockly,$lastBlock);			//即使转JSON格式出错，也原样保存回去，便于后续排错。
                   }
+                  //else{}  //无有效数据，就不处理了。
 
                   $substack=',"SUBSTACK": { "name": "SUBSTACK", "block": "'.$substackUID.'", "shadow": null } ';
                }
@@ -2651,8 +2658,8 @@ echo "9REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
                   $jsonBlock=json_decode($lastBlock);
                   if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
                   {
-echo "10REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
-                     $jsonBlock->{'next'}=NULL;
+//echo "10REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
+                     //$jsonBlock->{'next'}=NULL;
                      array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
                   }
                   else
@@ -2904,7 +2911,7 @@ echo "10REMOVED NEXT:".$jsonBlock->{'next'}."\n".$lastBlock;
       $strActuralArg="";
 
 print_r($arrFuncData);
-echo "66666666666666666666666666666666666666\n";
+//echo "66666666666666666666666666666666666666\n";
       switch($arrFuncData[0])
       {
          //主调函数的处理方法
@@ -3119,7 +3126,7 @@ echo "66666666666666666666666666666666666666\n";
             $nBraceCounter=0;
             $n=2;
 
-echo "？？？？？？？？？？？？？？？";
+//echo "？？？？？？？？？？？？？？？";
 print_r($arrFuncData);
             while($n<$nFuncLength)							//获取函数的所有参数，以完整括号为拆分依据，其实存在bug，
             {										//已经在后面代码里补上了。
@@ -3226,7 +3233,7 @@ print_r($arrArguments);
                      for($i=0;$i<=$nArgumentCount;$i++)				//函数有多个参数，对每个参数分别进行解析处理
                      {
 
-echo "forrrrrrrrrrrrrrrrrrrrrr\n i: $i fields: $nFIELDS\n";
+//echo "forrrrrrrrrrrrrrrrrrrrrr\n i: $i fields: $nFIELDS\n";
 print_r($arrArguments);
                         if(!isset($arrArguments[$i+$nFIELDS])) break;
 
@@ -3255,8 +3262,8 @@ echo "是变量。";
                               {
                                  $parsedArgData[$i]=$arg;				//解析成功，返回经RPN解析后的四则不混合运算数据
                               }
-echo ",,,,,,,,,,,,,,,,,,,\n";
-print_r($parsedArgData);
+//echo ",,,,,,,,,,,,,,,,,,,\n";
+//print_r($parsedArgData);
                            }
                            else								//字符串文本
                            {
@@ -3323,25 +3330,25 @@ print_r($arrChildUID);
                      )
 
                   *******************************************************************/
-echo "+++++++++++++++++\nparsedArgData\n";
+//echo "+++++++++++++++++\nparsedArgData\n";
                   print_r($parsedArgData);
-print_r($arrBlockArgConfig["inputs"]);
+//print_r($arrBlockArgConfig["inputs"]);
 
                }
 
 
-echo " parent: $parentUID    this: $thisUID  next: $nextUID\n";
+//echo " parent: $parentUID    this: $thisUID  next: $nextUID\n";
                //拼接主积木完整数据
                $strBlock='{"main":"0","id": "'.$thisUID.'","opcode": "'.$arrFuncData[0].'","fields":{'.$strFieldsData.'}, "inputs": {'.$strInputsData.'}, "next": '.($nextUID==NULL?'null':'"'.$nextUID.'"').', "topLevel": '.($parentUID==NULL?'true':'false').', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}';	//当bTOPLEVEL为true时，topLevel必为true；否则按元规则处理。
 																		//当bTOPLEVEL为true时，parent必为null；否则按原规则处理。	//这个添加的规则，可以让单独的积木能正确显示。
 
-echo "-00000000000-------PARENTUID------- $parentUID --------- $arrFuncData[0] ------------2---------\n";
-var_dump($strFieldsData);
-echo $strBlock."\n\n";
+//echo "-00000000000-------PARENTUID------- $parentUID --------- $arrFuncData[0] ------------2---------\n";
+//var_dump($strFieldsData);
+//echo $strBlock."\n\n";
             
 
             
-echo $strBlock."\n";
+//echo $strBlock."\n";
                //添加当前积木块数据
                array_push($this->Blockly,$strBlock);
 
@@ -3352,7 +3359,7 @@ echo $strBlock."\n";
 
          default:					//其他特例
 
-echo "default\n";
+//echo "default\n";
             /*******************************************************************************************************
 
               自制积木调用
@@ -3521,7 +3528,7 @@ echo "default\n";
                        $arrArgumentsData[$nArgumentLength]=$chCH;
                }
 
-               if(1){
+               if(0){
                   echo "////////////////////////// arrArgumentsData ///////////////////////////\n";
                   var_dump($arrArgumentsData);
                   echo "////////////////////////// arrArgumentsData ///////////////////////////\n";
