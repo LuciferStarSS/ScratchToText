@@ -405,7 +405,6 @@ class CToScratch3
       "control_wait_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
       "control_repeat_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
       "control_repeat"				=>0,//有包含的也不能删除next，除非后面真的没代码了。
-
    );
 
    /*************************************************************************************************************************
@@ -1309,8 +1308,7 @@ class CToScratch3
                $lastBlock=array_pop($this->Blockly);
                if($lastBlock){
                   $jsonBlock=json_decode($lastBlock);
-echo "lastBlock\n";
-print_r($lastBlock);
+
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
                      $jsonBlock->{'next'}=NULL;
@@ -2089,12 +2087,15 @@ echo $strCondition;
                   
                ********************************************************************************************/
 
+
                $thisUID=array_pop($this->UIDS);			//取出当前，也即上一个主block生成的nextuid
                if($thisUID==NULL)  {$parentUID=$thisUID;$thisUID=UID();}
                $parentUID=array_pop($this->UIDS);
                $nextUID=UID();
                $TOPLEVELSTATUS= $this->bTOPLEVEL;
                $this->bTOPLEVEL="false";			//后续代码的toplevel必为false，true只在deal第一次进入时设置。
+
+
 
 
                $arrChildUID=Array();
@@ -2431,6 +2432,41 @@ print_r($arrChildUID);
 
                }
 
+               /*******************************************************************************************
+
+                  有如下代码：
+
+                    if( 1>2 ){
+                       for(int i1 = 0; i1 < 步数; i1++ ){
+         
+                       }
+                    }
+                    if( 3>$  ){
+                       for(int i2 = 0; i2 < 步数; i2++ ){
+ 
+                       }
+                    }
+
+                  第2个if在创建积木数据时，需要确认上一条积木数据中的next是否为$thisUID，
+                  如果不是，需要清掉上一条数据的next数据。
+
+                  这条规则是否适用于所有积木，待测。
+
+               *******************************************************************************************/
+
+               $lastBlock=array_pop($this->Blockly);
+               if($lastBlock){
+                  $jsonBlock=json_decode($lastBlock);
+                  if($jsonBlock->{'next'}!=$thisUID)			//非HATS类，强制修改next数据。
+                  {
+                     $jsonBlock->{'next'}=NULL;
+                     array_push($this->Blockly,json_encode($jsonBlock));		//jsonDecode和jsonEncode后的数据，会删掉多余的空格。
+                  }
+                  else
+                     array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
+               }
+
+
                //构建if-else的完整数据
                array_push($this->Blockly,'{"d":"if","id": "'.$thisUID.'","opcode": "control_if'.($bIFELSE?'_else':'').'","inputs": {'.$condition_input.' '.$substack1.' '.$substack2.'},"fields": {},"next": '.($nextUID?'"'.$nextUID.'"':'null').',"topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID?'"'.$parentUID.'"':'null').',"shadow": false}');
 
@@ -2558,6 +2594,7 @@ print_r($arrChildUID);
                   //shadow
                   array_push($this->Blockly,  '{"f":"1","id": "'.$childUID.'", "opcode": "math_whole_number", "inputs": {}, "fields": { "NUM": { "name": "NUM", "value": "'.$nLOOP.'" } }, "next": null, "topLevel": false, "parent": null, "shadow": true}' );//"parent": "'.$thisUID.'", "shadow": true}' );
                	  //重复执行n次的主信息
+                  //这里的next有个问题
                   array_push($this->Blockly,  '{"f":"2","id": "'.$thisUID.'", "opcode": "control_repeat", "inputs": { "TIMES": { "name": "TIMES", "block": "'.$arrChildUIDX[0].'", "shadow": "'.$childUID.'" } '.$substack.'}, "fields": {}, "next": '.(($nextUID)?'"'.$nextUID.'"':'null').', "topLevel": '.$TOPLEVELSTATUS.', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}' );
                }
                else						//直接用$nLOOP作为循环次数
@@ -2570,7 +2607,6 @@ print_r($arrChildUID);
 
                array_pop($this->UIDS);			//弹出回调中返回的nextuid，舍弃。
                array_pop($this->UIDS);			//丢弃一次thisUID，也就是parentuid
-
                array_push($this->UIDS,$thisUID);	//下一个新积木的parentUID
                array_push($this->UIDS,$nextUID);	//下一个新积木的thisUID
 
@@ -4126,6 +4162,9 @@ print_r($parsedBOOLData);
                       此数据表明，当前应该构建一个opcode为“operator_gt”的积木，且每个参数需要设置shadow默认值，且是两个参数。
                       如果数据获取失败，则表明当前这组数据，不是逻辑表达式。
 
+
+                      目前观测到，s1,s2,s3,s4都不需要。
+
                ****************************************************************************************************/
                list($strOPCODE,$bTwoArguments,$bShadowNeeded)=isset($arrLogicOptToInfo[$strOperator])?$arrLogicOptToInfo[$strOperator]:NULL;//运算操作符所对应的积木名称。原本用switch做，但用数组会更快。
                if($strOPCODE==NULL) break;				//未定义的运算符，数据错误，终止当前循环。一旦出错，其实可以直接终止整个程序的运行，但以后可能会增强错误信息的提示，所以暂时这样处理。
@@ -4176,16 +4215,16 @@ print_r($parsedBOOLData);
 
                      ********************************************************************************/
 
-                     if($bShadowNeeded)				//参数为空，但又需要shadow，于是添加
-                     {
-                        $arrLogicArgUID[$m]=UID();
-                        array_push($this->Blockly, '{"t":"s3","id": "'.$arrLogicArgUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent": null,"shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
-                        $arrArgVal[$m]=$arrLogicArgUID[$m];	
-                     }
-                     else					//不需要shadow，就置NULL
-                     {
+                     //if($bShadowNeeded)				//参数为空，但又需要shadow，于是添加
+                     //{
+                        //$arrLogicArgUID[$m]=UID();
+                        //array_push($this->Blockly, '{"t":"s3","id": "'.$arrLogicArgUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent": null,"shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
+                        //$arrArgVal[$m]=$arrLogicArgUID[$m];	
+                     //}
+                     //else					//不需要shadow，就置NULL
+                     //{
                         $arrArgVal[$m]=NULL;
-                     }
+                     //}
                   }
                   else if(is_numeric($strArgVal))	//参数是数字，创建一个同值的shadow，由于是数字，所以不可能是不需要shadow的且或非
                   {
@@ -4203,12 +4242,12 @@ print_r($parsedBOOLData);
                         //block变量积木块
 
 //$currentParentUID=$this->arrBlockToParent[$arrLogicArgUID[$m]];
-echo $thisUID;
+//echo $thisUID;
                         array_push($this->Blockly,    '{"t":"3","id": "'.$arrLogicArgUID[$m].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.$this->arrVariableUIDS[$arrArgVal[$m]].'","value": "'.$arrArgVal[$m].'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": false}');
                         $arrArgVal[$m]=$arrLogicArgUID[$m];		//用IDDI替换原来的参数数据
                         //shadow变量积木块所占位置需要生成shadow
-                        $arrChildShadowUID[0]=UID();
-                        array_push($this->Blockly, '{"t":"s4","id": "'.$arrChildShadowUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": true,"parent": null,"shadow": true}');
+                        //$arrChildShadowUID[0]=UID();
+                        //array_push($this->Blockly, '{"t":"s4","id": "'.$arrChildShadowUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": true,"parent": null,"shadow": true}');
                      }
                      else if(isset($this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$arrArgVal[$m]])) //对自制积木中的本地变量直接引用
                      {
@@ -4216,11 +4255,16 @@ echo $thisUID;
                         //自制积木定义里对参数的调用，只需要：
                         //    VALUE的value为参数名。
 
-echo "sdfffffffffffffffffff\n";
-print_r($this->arrSelfDefinedFunctionArgs);
-print_r($arrArgVal);
+//echo "sdfffffffffffffffffff\n";
+//print_r($this->arrSelfDefinedFunctionArgs);
+//print_r($arrArgVal);
+$arrChildShadowUID[$m]=UID();
+
+                        array_push($this->Blockly, '{"t":"5","id": "'.$arrChildShadowUID[$m].'","opcode":"argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$arrArgVal[$m].'"}},"next": null,"topLevel": false,"parent":  "'.$thisUID.'","shadow":false}');
                         //$arrArgVal[$m]=$this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$arrArgVal[$m]];//UID();//原本传入的是变量名，需要重新生成UID。
-                        array_push($this->Blockly, '{"t":"5","id": "'.$arrArgVal[$m].'","opcode":"argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$arrArgVal[$m].'"}},"next": null,"topLevel": false,"parent":  "'.$thisUID.'","shadow":false}');
+                        $arrArgVal[$m]=$arrChildShadowUID[$m];//$this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$arrArgVal[$m]];//UID();//原本传入的是变量名，需要重新生成UID。
+
+
                         //shadow由调用此变量的积木自己生成
                      }
                      else if(($nFound=preg_match_all("/ID_([^^]*?)_DI/",$arrArgVal[$m]))>0)	//检测是否是积木块UID。“ID_xxxxxxxxxxxxxxxxxxxx_DI”为两个RPN所独有。
@@ -4236,11 +4280,11 @@ print_r($arrArgVal);
 
                         **************************************************************************************/
 
-                        if($bShadowNeeded)				//需要shadow
-                        {
-                           $arrChildShadowUID[$m]=UID();
-                           array_push($this->Blockly, '{"t":"s2","id": "'.$arrChildShadowUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent": null,"shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
-                        }
+                        //if($bShadowNeeded)				//需要shadow
+                        //{
+                           //$arrChildShadowUID[$m]=UID();
+                           //array_push($this->Blockly, '{"t":"s2","id": "'.$arrChildShadowUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent": null,"shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
+                        //}
 
                         $strIDDI=trim($arrArgVal[$m]);
 
@@ -4277,11 +4321,11 @@ print_r($arrArgVal);
 
                         ********************************************************************************************/
 
-                        if($bShadowNeeded)				//需要shadow，shadow不需要parent
-                        {
-                           $arrChildShadowUID[$m]=UID();
-                           array_push($this->Blockly, '{"t":"s1","id": "'.$arrChildShadowUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent":null,"shadow": true}');//shadow不需要parent。"parent": "'.$thisUID.'","shadow": true}');	
-                        }
+                        //if($bShadowNeeded)				//需要shadow，shadow不需要parent
+                        //{
+                           //$arrChildShadowUID[$m]=UID();
+                           //array_push($this->Blockly, '{"t":"s1","id": "'.$arrChildShadowUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": ""}},"next": null,"topLevel": false,"parent":null,"shadow": true}');//shadow不需要parent。"parent": "'.$thisUID.'","shadow": true}');	
+                        //}
 
                         //解析计算表达式
                         if($this->rpn_calc->init($arrArgVal[$m])==TRUE)		//将四则混合运算字符串交由RPN来完成解析
@@ -4293,6 +4337,8 @@ print_r($arrArgVal);
                         else//不是算术表达式，只能作为字符串处理。由于此处只能数字，所以显示空。
                         {
                            $arrChildShadowUID[$m]=$arrLogicArgUID[$m]=UID();	//给shadow生成一个UID。
+
+                           //t:6是t:5的shadow
                            array_push($this->Blockly, '{"t":"6","id": "'.$arrLogicArgUID[$m].'","opcode": "text","inputs": {},"fields": {"TEXT": {"name": "TEXT","value": "'.$arrArgVal[$m].'"}},"next": null,"topLevel": false,"parent":"'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
                            $arrArgVal[$m]=$arrLogicArgUID[$m];
                         }
@@ -4337,6 +4383,9 @@ print_r($arrArgVal);
                }
                else //大于、小于、等于、且、或
                {
+
+echo "t12sssssssssssssssssssssss\n";
+print_r($arrArgVal);
                   array_push($this->Blockly,'{"t":"12","id": "'.$thisUID.'","opcode": "'.$strOPCODE.'","inputs": {"OPERAND1": {"name": "OPERAND1","block": "'.$arrArgVal[0].'","shadow": '.(($bShadowNeeded)?'"'.$arrChildShadowUID[0].'"':'null').'},"OPERAND2": {"name": "OPERAND2","block": "'.$arrArgVal[1].'","shadow": '.(($bShadowNeeded)?'"'.$arrChildShadowUID[1].'"':'null').'}},"fields": {},"next": null,"topLevel": '.($childBlockParent==NULL?'true':'false').',"parent": '.($childBlockParent==NULL?'null':'"'.$childBlockParent.'"').',"shadow": false}');
                }
             }//for $i
@@ -4379,8 +4428,9 @@ print_r($arrArgVal);
 
 //BUG BUG BUG
 //if(1>operator_round(我的变量+2*3)){}
-print_r($arrLogicExpData[2]);
-echo $childLogicBlockUID."ddddddddddddddddddddddddddddddddddddddd\n";
+//print_r($arrLogicExpData[2]);
+//echo $childLogicBlockUID."ddddddddddddddddddddddddddddddddddddddd\n";
+
          if(is_array($childLogicBlockUID)) 	//返回数据未统一导致。稍后检查。
             return $childLogicBlockUID;
          else
@@ -4971,7 +5021,7 @@ echo "ddddddddddddddd 12 $parentUID  $thisUID\n";
 //shadow生成异常
 print_r($this->arrBlockToParent);
 
-$childBlockParent=isset($this->arrBlockToParent[$thisUID])?$this->arrBlockToParent[$thisUID]:$parentUID;//原因不明。
+                        $childBlockParent=isset($this->arrBlockToParent[$thisUID])?$this->arrBlockToParent[$thisUID]:$parentUID;//原因不明。
 
                         array_push($this->Blockly, '{"d":"12","id": "'.$thisUID.'","opcode": "'.$arrCalcOptInfo[0].'","inputs": {"'.$argInfo['inputs'][0][0].'": {"name": "'.$argInfo['inputs'][0][0].'","block": "'.$arrArgBlockUID[0].'","shadow": "'.$arrArgShadowUID[0].'"},"'.$argInfo['inputs'][1][0].'": {"name": "'.$argInfo['inputs'][1][0].'","block": "'.$arrArgBlockUID[1].'","shadow": "'.$arrArgShadowUID[1].'"}},"fields": {},"next": null, "topLevel": '.($childBlockParent==NULL?'true':'false').',"parent": '.($childBlockParent==NULL?'null':'"'.$childBlockParent.'"').',"shadow": false}');//"topLevel":false,"parent":null}');//"topLevel":'.($childBlockParent==NULL?'true':'false').',"parent": "'.($childBlockParent==NULL?'null':'"'.$childBlockParent.'"').'","shadow": false}');
                      }
@@ -5013,8 +5063,8 @@ print_r($this->Blockly);
             //echo "自制积木的变量，需要加shadow.";
             //参数的主机木块block
             array_push($this->Blockly, '{"d":"16","id": "'.$arrChildBlockUID[0].'","opcode": "argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$arrCalExpData2.'"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": false}');
-            //默认值积木shadow
-            array_push($this->Blockly, '{"d":"17","id": "'.$arrChildBlockUID[1].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "10"}},"next": null,"topLevel": false,"parent":null,"shadow": true}');//"parent": "'.$parentUID.'","shadow": true}');
+            //默认值积木shadow//排查下来，不需要了。在S：0的时候已经创建了。
+            //array_push($this->Blockly, '{"d":"17","id": "'.$arrChildBlockUID[1].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "10"}},"next": null,"topLevel": false,"parent":null,"shadow": true}');//"parent": "'.$parentUID.'","shadow": true}');
          }
          else
          {										//纯数字/字符串
