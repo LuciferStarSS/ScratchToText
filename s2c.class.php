@@ -73,7 +73,11 @@ class Scratch3ToC
    {
       if(isset($oBlock->{"block"}))	//传入的可能是Block而非ID		//block与shadow不一致，取shadow；如果一致，或shadow为NULL，取block
       {
-         $BlockID=$oBlock->{"block"};//($oBlock->{"block"}==$oBlock->{"shadow"})?$oBlock->{"block"}:($oBlock->{"shadow"}!=NULL?$oBlock->{"block"}:$oBlock->{"block"});
+         $BlockID=$oBlock->{"block"};
+         if($oBlock->{"shadow"}!=null && $oBlock->{"block"}!=$oBlock->{"shadow"})//如果存在非null的shadow，且shadow不等于block，则删除shadow数据。
+         {
+            unset($this->Blocks->{$oBlock->{"shadow"}});
+         }
          if($BlockID==NULL) return -1;
       }
       else $BlockID=$oBlock;
@@ -118,7 +122,7 @@ class Scratch3ToC
       if(isset($this->arrBlockID[$Block->{"id"}]))
          unset($this->arrBlockID[$Block->{"id"}]);				//对于存在的积木，需从清单中清除，并执行后续的转换操作；
       else return -1;								//对于不存在的积木，则直接返回。
-      //var_dump($Block->{"opcode"});
+      var_dump($Block->{"opcode"});
       switch($Block->{"opcode"}) //根据opcode来确认应如何转换
       {
 
@@ -301,13 +305,28 @@ class Scratch3ToC
             break;
 
          case "motion_goto":							//移到预设目标位置
-            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( \"";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
+
+
+if($Block->{"inputs"}->{"TO"}->{'block'}!=$Block->{"inputs"}->{"TO"}->{'shadow'})
+{
+   if($Block->{"inputs"}->{"TO"}->{'shadow'}!='null')
+   {
+print_r($this->Blocks);
+echo "删除".$Block->{"inputs"}->{"TO"}->{'shadow'};
+      unset($this->Blocks->{$Block->{"inputs"}->{"TO"}->{'shadow'}});
+print_r($this->Blocks);
+   }
+}
+            //$this->codeInC[$this->currentType][]= $this->convertCode($this->Blocks->{$Block->{"inputs"}->{"TO"}->{'block'}});
+
+
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"TO"});
-            $this->codeInC[$this->currentType][]= "\" );\n";
+            $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "motion_goto_menu":						//移到预设目标位置的选项菜单
-            $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"TO"}->{"value"};
+            $this->codeInC[$this->currentType][]= '"'.$Block->{"fields"}->{"TO"}->{"value"}.'"';
             break;
 
          case "motion_pointindirection":					//移到“随机位置/鼠标指针”
@@ -1626,12 +1645,12 @@ class Scratch3ToC
          {
             if($arr->{"type"}=="broadcast_msg")									//消息也会被定义成变量。
             {
-               $this->codeInC[$this->currentType][]="MSG ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".$arr->{"value"}."\"")).";\n";
+               $this->codeInC[$this->currentType][]="MSG ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
             }
             else if($arr->{"type"}=="list")									//列表的定义
-                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",$arr->{"value"})."' ":"")."};\n";
+                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",trim($arr->{"value"},'"'))."' ":"")."};\n";
             else												//普通变量的定义
-                $this->codeInC[$this->currentType][]="VAR ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".$arr->{"value"}."\"")).";\n";
+                $this->codeInC[$this->currentType][]="VAR ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
          }
       }
 
@@ -1644,12 +1663,12 @@ class Scratch3ToC
          {
             if($arr->{"type"}=="broadcast_msg")									//消息也会被定义成变量。
             {
-               $this->codeInC[$this->currentType][]="MSG ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".$arr->{"value"}."\"")).";\n";
+               $this->codeInC[$this->currentType][]="MSG ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
             }
             else if($arr->{"type"}=="list")									//列表的定义
-                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",$arr->{"value"})."' ":"")."};\n";
+                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",trim($arr->{"value"},'"'))."' ":"")."};\n";
             else												//普通变量的定义
-                $this->codeInC[$this->currentType][]="VAR ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".$arr->{"value"}."\"")).";\n";
+                $this->codeInC[$this->currentType][]="VAR ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
          }
       }
 
