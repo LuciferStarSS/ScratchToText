@@ -1,75 +1,212 @@
 <?php
 //set_time_limit(3);
-/*************************************************************************************************************************
-1.加载json数据
-2.获取所有积木块ID
-3.获取所有头部积木块（HATs，此类积木块为每组代码的起始位置）
-4.从头部积木块开始解析，并从所有积木块数组中，将已解析的积木块索引删除，剩余的积木块，即为零散积木块，在C中暂时可以舍弃，或者独立放置。
-      解析时，需要遍历链表。
+/**********************************************************************
+
+   CToScratch3负责：
+
+        1. 解析POST过来的类C文本代码，按段落进行拆分。
+           段落是指：
+               1.1. 一个事件所包含的全部代码，或
+               1.2. 由若干个积木组成的有先后执行顺序的代码片段。
+        2. 依次对每个段落中的代码进行解析，并生成对应的积木数据（JSON格式的文本）；
+        3. 将生成的数据返回给前端，由前端对积木数据进行添加操作。
+
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   一个标准的积木块，它是由一系列的参数来控制的，在Scratch3.0内核中，这些数据以JSON数据格式储存。
+
+        例一：
+        外观分类中的积木“下一个造型”，转换成类C语言后为“looks_nextcostume();”，其积木的JSON数据如下：
+        {
+            "rx+6=NM28b@^W=eG=O*y"; {				//主积木块数据	主积木块是指：数据中的opcode直接与积木功能相关联，在转成类C语言时，这个opcode就是函数名。
+                "id": "rx+6=NM28b@^W=eG=O*y",			//id
+                "opcode": "looks_nextcostume",			//opcode	用于在Scratch3.0内核的虚拟机中调用相应的处理代码。
+                "inputs": {},					//inputs	可接收用户的输入，可编辑、可交互的参数。一般以白色圆角的文本输入框的形式出现。
+                "fields": {},					//fields	不可接收用户的输入，不可编辑、不可交互的参数。一般以下拉框的形式出现。
+                "next": null,					//next		指向下一个积木块的id，如果后面没有积木块了，此处必须为null。
+                "parent": null,					//parent	指向此积木的上一块积木的id，如果当前积木式所在代码段的第一块积木，必须为null。
+                "topLevel": true,				//topLevel	如果当前积木是所在代码段的第一块积木，必须为true，否则整个代码段将不显示。
+                "shadow": false,				//shadow	在主积木块中，必须为false，否则将不显示	。
+                "x": 53.48148148148147,
+                "y": 174.51851851851828				//积木在工作区的坐标，在生成JSON数据时，可忽略。
+            }
+        }
+
+        例二：
+        运动分类中的积木“移动(10)步”，转换成类C语言后为“motion_movesteps(10);”，其积木的JSON数据如下：
+
+        {
+            "`)s`SO{%uI8~V^n^O~p[": {				//主积木块数据
+                "id": "`)s`SO{%uI8~V^n^O~p[",
+                "opcode": "motion_movesteps",
+                "inputs": {
+                    "STEPS": {					//这个积木有一个inputs类参数，名字为STEPS
+                        "name": "STEPS",
+                        "block": "d@{vmU.U6kdiOP:xtR~z",	//指向保存参数实际值的另一个积木
+                        "shadow": "d@{vmU.U6kdiOP:xtR~z"	//指向一个保存默认值的第三个积木
+                    }						//如果参数实际值为数字或文本，则shadow与block指向同一个积木。
+                },
+                "fields": {},
+                "next": null,
+                "parent": null,
+                "topLevel": true,
+                "shadow": false,
+                "x": 330.5185185185184,
+                "y": 229.92592592592592
+            },
+            "d@{vmU.U6kdiOP:xtR~z": {				//参数积木块数据
+                "id": "d@{vmU.U6kdiOP:xtR~z",
+                "opcode": "math_number",			//opcode类型表明此参数类型为数字
+                "inputs": {},					//参数都是固定值，因此无inputs
+                "fields": {					//参数积木块的数据都保存在fields里
+                    "NUM": {					//这里有一个名为NUM的fields类型的参数
+                        "name": "NUM",
+                        "value": "10"				//值为10
+                    }
+                },
+                "next": null,					//next		必须为null
+                "parent": "`)s`SO{%uI8~V^n^O~p[",		//parent	指向主积木块
+                "topLevel": false,				//topLevel	true和false并无影响
+                "shadow": true					//shadow	必须为true，否则默认值为空白，只有鼠标单击文本框后才会显示内容。
+            }
+        }
+
+        例三：
+        如果有积木为“移动(我的变量)步”，则JSON数据为：
+
+        {
+             "ID_?]QrK~U9mrXQI`[7lsjO_DI": {			//主积木块数据
+                 "id": "ID_?]QrK~U9mrXQI`[7lsjO_DI",
+                 "opcode": "motion_movesteps",
+                 "fields": {},
+                 "inputs": {
+                     "STEPS": {
+                         "name": "STEPS",
+                         "block": "ID_sf7{V_$[_Hs]`S5XNd:l_DI",	//当参数为非数字或字符时，block指向实际参数积木块
+                         "shadow": "ID_$bogJI9gZtoGK2S#@s@I_DI"	//shadow指向默认值积木块。
+                     }						//默认值是指：当从移动(我的变量)步积木组合中移除“我的变量”这个积木块后，
+                 },						//在原本的位置会显示一个数值，这个数值就是默认值。
+                 "next": null,
+                 "parent": null,
+                 "topLevel": true,
+                 "shadow": false
+             },
+            "ID_sf7{V_$[_Hs]`S5XNd:l_DI": {			//实际参数积木块数据
+                "id": "ID_sf7{V_$[_Hs]`S5XNd:l_DI",      
+                "opcode": "data_variable",
+                "inputs": {},
+                "fields": {
+                    "VARIABLE": {
+                        "name": "VARIABLE",
+                        "id": "`jEk@4|i[#Fk?(8x)AV.",		//变量的id，要与已定义的变量的id一致
+                        "value": "我的变量",			//变量的名字，要与已定义的变量的名字一致
+                        "variableType": ""			//如果是列表，此处值为“list”，如果是文本，则为“text”。
+                    }
+                },
+                "next": null,
+                "parent": "ID_?]QrK~U9mrXQI`[7lsjO_DI",
+                "topLevel": false,				//topLeve	true和false并无影响，建议为false
+                "shadow": false					//shadow	必须为false，否则虽然有效，但不显示变量，只显示shadow值。
+            },
+            "ID_$bogJI9gZtoGK2S#@s@I_DI": {			//默认值积木块数据
+                 "id": "ID_$bogJI9gZtoGK2S#@s@I_DI",
+                 "opcode": "math_number",
+                 "inputs": {},
+                 "fields": {
+                     "NUM": {
+                         "name": "NUM",
+                         "value": "10"				//默认值为10
+                     }
+                 },
+                 "next": null,
+                 "parent": null,
+                 "topLevel": true,				//topLevel	true和false并无影响，建议为true
+                 "shadow": true					//shadow	必须为true
+             },
+         }
+
+   本程序就是基于上述的分析，设计算法，实现积木与类C语言之间的转换操作的。
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-TODO：
+   主要需要解决：
 
-motion_movesteps( 160 );
-for(int i1 = 0; i1 < 10; i1++ ){
-   motion_movesteps( 150 );
-   for(int i2 = 0; i2 < 10; i2++ ){
-      motion_movesteps( 103 );
-   }
-   motion_movesteps( 120 );
-}
-motion_movesteps( 110 );
+        0. 文本数据的拆分
+            
+        1. 函数调用与积木块之间的数据转换。其中：
+           1.1. 函数与积木块的数据转换，特别是参数的转换：
+             1.1.1. 函数的参数可以是数字、文本、变量、函数（包括自制积木）的调用，以及
+             1.1.2. 以上各种的混合表达式。
+           1.2. 以及表达式的解析。表达式有两种：
+             1.2.1. 算术表达式
+             1.2.2. 逻辑表达式
+           1.3. 示例：
+
+               if( sensing_mousedown() && sensing_keypressed("a")){				//if的CONDITION		//这里是逻辑表达式
+                  我的变量+=1;									//if的SUBSTACK
+                  motion_movesteps(10+我的变量*random(1,10)-abs(我的变量-1)*sin(3.14/3));	//复杂的参数		//这里是算术表达式
+               }
+
+               逻辑和算术表达式的拆解，都用逆波兰RPN算法。
+
+               CONDITION（sensing_mousedown() && sensing_keypressed("a")）拆解后得到：
+                  sensing_mousedown()
+                  sensing_keypressed("a")
+                  &&
+
+               参数（10+我的变量*random(1,10)-abs(我的变量-1)*sin(3.14/3) ）拆解后得到：
+                  10
+                  我的变量
+                  random(1,10)
+                  *
+                  +
+                  abs(我的变量-1)
+                  sin(3.14/3)
+                  *
+                  -
+
+               最后一个操作是生成的积木组合的最底层的那块，需要把它的id返回给调用者。
 
 
 
+        2.积木块与积木块之间的关联。
+           2.1. 每个积木，都有id,parent,next等属性，部分有分支控制的积木，还有SUBSTACK设置。
+           2.2. 有分支控制的积木为：
+             2.2.1. 重复执行10次	control_repeat
+             2.2.2. 重复执行		control_forever
+             2.2.3. 重复执行直到	control_repeat_until
+             2.2.4. 如果那么		control_if
+             2.2.5. 如果那么否则	control_if_else
 
-//以下为已关联事件的积木
-//当接收到广播
-event_whenbroadcastreceived("跟上2"){
-   looks_show();
-   motion_pointindirection( data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 3 )  ) );
-   motion_gotoxy( data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 1 )  ) , data_itemoflist( 坐标2 ,  (  ( 编号 * 3 )  + 2 )  ) );
-   if(  ( 身长2 == 编号 )  ){
-      control_delete_this_clone();
-   }
-}
+           2.3. 示例：
+
+               event_whenflagclicked()	   |   next--             <---    |   parent->null      			           	//对应积木1：当绿旗被点击
+               {                           |         ¦                ¦   |-------------------------|         
+                  motion_movesteps(10);	   |     <---         parent--    |   next--         <---   |			    	//对应积木2：移动10步
+                                           |------------------------------|         ¦            ¦  |-----------------------|
+                  for(int i=0;i<10;i++)    |   SUBSTACK--         <---    |     <---     parent--   |  next--        <---   |     //对应积木3：重复执行10次
+                  {		           |             ¦            ¦   |-------------------------|        ¦           ¦  |  
+                     motion_movesteps(20); |         <---     parent--    |   next-->null           |        ¦           ¦  |     //对应积木4：移动10步
+                  }                        |------------------------------|-------------------------|        ¦           ¦  |                                     
+                  motion_movesteps(30);	   |   next-->null                                          |    <---    parent--   |    	//对应积木5：移动10步
+               }                           |--------------------------------------------------------|-----------------------|
 
 
+               event_whenflagclicked()	   |   next--      parent->null       <---              					//对应积木1：当绿旗被点击
+               {                           |         ¦                            ¦          
+                  motion_movesteps(10);	   |     <---      next--         parent--        <---  		    	            	//对应积木2：移动10步
+                                           |                     ¦                            ¦ 
+                  for(int i=0;i<10;i++)    |   SUBSTACK--    <---         next--      parent--           <---          <---       //对应积木3：重复执行10次
+                  {		           |             ¦                      ¦                            ¦             ¦ 
+                     motion_movesteps(20); |         <---                       ¦     next-->null    parent--              ¦      //对应积木4：移动10步
+                  }                        |                                    ¦                                          ¦             
+                  motion_movesteps(30);	   |                                <---                     next-->null   parent--   	//对应积木5：移动10步
+               }                           |
 
-
-Array
-(
-    [0] => Array
-        (
-            [0] => Array
-                (
-                    [0] => >
-                    [1] => ID_}ve1]2EubQC:SIH}Oc4c_DI
-                    [2] => ID_r;rMrM#;Kv~0K;Kqsz3u_DI + ID_tu55aF~L[Qg#S#?oQ.TO_DI		//这里少了一个算术运算分解
-                    [3] => 10
-                )
-
-        )
-
-    [2] => Array
-        (
-            [0] => Array
-                (
-                    [0] => operator_random
-                    [1] => ID_r;rMrM#;Kv~0K;Kqsz3u_DI
-                    [2] => 1,4
-                )
-
-            [1] => Array
-                (
-                    [0] => operator_random
-                    [1] => ID_tu55aF~L[Qg#S#?oQ.TO_DI
-                    [2] => 1,3
-                )
-
-        )
-
-)
+             其中，
+             2.3.1. next和parent的值为所指向的积木的id值；
+             2.3.2. SUBSTACK的值为分支代码段中第一块积木的id值；
+             2.3.3. 代码段的第一个积木的parent为null；
+             2.3.4. 分支代码段的最后一个积木的next为null。
 
 
 关于变量ID问题
@@ -273,8 +410,8 @@ class CToScratch3
       /****************************↓********↓*****↓**已*经*在*主*程*序*中*实*现*，*不*需*要*这*些*配*置*信*息*了*。**↓****↓*****↓******↓****************************
       "control_forever"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBSTACK","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//等待<条件>
       "control_repeat_until"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBSTACK","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//重复执行直到
-      "control_wait_until"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBSTACK","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//重复执行直到
-      "control_repeat"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TIMES","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//重复执行n次
+      "control_wait_until"			=>	Array("fields"=>Array(),"inputs"=>Array()),		//重复执行直到
+      "control_repeat"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TIMES","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//重复执行
       "for"					=>	Array("fields"=>Array(),"inputs"=>Array()),										//这4个，仅在将代码按换行拆分时使用。
       "if"					=>	Array("fields"=>Array(),"inputs"=>Array()),
       "do"					=>	Array("fields"=>Array(),"inputs"=>Array()),
@@ -542,7 +679,7 @@ class CToScratch3
 
                ****************************************************************************/
 
-               $strPattern=Array('/\/\*([^^]*?)\*\//','/\/\/([^^]*?)\n/');
+               $strPattern=Array('/\/\*([^^]*?)\*\//','/(?<!:)\/\/.*$/m');
                $strReplacement=Array('','');
                $this->arrCODEDATA[$i]=preg_replace($strPattern,$strReplacement,$this->arrCODEDATA[$i]);		//删除注释和换行
                $this->arrCODEDATA[$i]=array_filter(explode(";",$this->arrCODEDATA[$i]));			//按“;”拆分
@@ -704,8 +841,8 @@ class CToScratch3
 
 
                ****************************************************************************/
-               $strPattern		=Array( '/\/\*([^^]*?)\*\//',  '/^\/\/.*$/m');
-               $strReplacement		=Array( '',                    '',               );
+               $strPattern		=Array( '/\/\*.*?\*\//s',  '/(?<!:)\/\/.*$/m');
+               $strReplacement		=Array( '',                ''                );
                $this->arrCODEDATA[3]	=preg_replace($strPattern,$strReplacement,$this->arrCODEDATA[3]);			//1.删除注释
 
                $strPattern		=Array( '/\\n\\n/');
@@ -1128,8 +1265,6 @@ class CToScratch3
                   }
                   else						/******** 其他代码，都没有{}，所以只需要根据连续换行符来确认是否要增段拆开。 ********/
                   {
-
-//echo "for ELSE $n\n";
                      if($strCode!="")							//非空行
                      {
                         $arrCodeSection[$nSECTION][] = $strCode;			//装配数据
@@ -1253,7 +1388,7 @@ class CToScratch3
                   $thisVariableUID=isset($this->arrVariableUIDS[$strVariableName])?$this->arrVariableUIDS[$strVariableName]:UID();	//检查是否是已定义过的变量
 
                   /***************       UID    *****    类型         ******        名字      ******  默认值        ***********/
-                  $arrVariables[]=Array($thisVariableUID,trim($matchedVariables[1]),$strVariableName ,trim($matchedVariables[3]));
+                  $arrVariables[]=Array($thisVariableUID,trim($matchedVariables[1]),$strVariableName ,trim(trim($matchedVariables[3]),'"'));	//先去除空格，再去除双引号。
 
                   /***************       变量名       *******        UID    *********/
                   $this->arrVariableUIDS[$strVariableName]=$thisVariableUID;		//给每个变量预设一个UID。对于适用于所有角色的变量，后期要从当前项目获取现有UID，填充到这里，防止因UID改变而使得其他角色代码出错。
