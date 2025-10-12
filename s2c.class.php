@@ -74,10 +74,10 @@ class Scratch3ToC
       if(isset($oBlock->{"block"}))	//传入的可能是Block而非ID		//block与shadow不一致，取shadow；如果一致，或shadow为NULL，取block
       {
          $BlockID=$oBlock->{"block"};
-         if($oBlock->{"shadow"}!=null && $oBlock->{"block"}!=$oBlock->{"shadow"})//如果存在非null的shadow，且shadow不等于block，则删除shadow数据。
-         {
-            unset($this->Blocks->{$oBlock->{"shadow"}});
-         }
+         //if($oBlock->{"shadow"}!=null && $oBlock->{"block"}!=$oBlock->{"shadow"})//如果存在非null的shadow，且shadow不等于block，则删除shadow数据。
+         //{
+         //   unset($this->Blocks->{$oBlock->{"shadow"}});
+         //}
          if($BlockID==NULL) return -1;
       }
       else $BlockID=$oBlock;
@@ -122,7 +122,8 @@ class Scratch3ToC
       if(isset($this->arrBlockID[$Block->{"id"}]))
          unset($this->arrBlockID[$Block->{"id"}]);				//对于存在的积木，需从清单中清除，并执行后续的转换操作；
       else return -1;								//对于不存在的积木，则直接返回。
-      var_dump($Block->{"opcode"});
+      //var_dump($Block);//->{"opcode"});
+
       switch($Block->{"opcode"}) //根据opcode来确认应如何转换
       {
 
@@ -241,25 +242,49 @@ class Scratch3ToC
          /**************************HAT 头部事件*************************/
 
          case "event_broadcast":	        				//发送广播
-            if($Block->{"inputs"}->{"BROADCAST_INPUT"}->{"block"}!=$Block->{"inputs"}->{"BROADCAST_INPUT"}->{"shadow"})	//参数中blockID与shadowID不一致，需要删除shadowID的那项
+            //if($Block->{"inputs"}->{"BROADCAST_INPUT"}->{"block"}!=$Block->{"inputs"}->{"BROADCAST_INPUT"}->{"shadow"})	//参数中blockID与shadowID不一致，需要删除shadowID的那项
+            //{
+            //   $shadowID=$Block->{"inputs"}->{"BROADCAST_INPUT"}->{"shadow"};
+            //   if(isset($this->arrBlockID[$shadowID]))
+            //      unset($this->arrBlockID[$shadowID]);	
+            //}
+
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( ";		//广播消息都是字符串，所以直接加双引号。
+            //$this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"BROADCAST_INPUT"});
+
+            $strARGNAME="BROADCAST_INPUT";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
             {
-               $shadowID=$Block->{"inputs"}->{"BROADCAST_INPUT"}->{"shadow"};
-               if(isset($this->arrBlockID[$shadowID]))
-                  unset($this->arrBlockID[$shadowID]);	
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{"BROADCAST_OPTION"}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
             }
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( \"";		//广播消息都是字符串，所以直接加双引号。
-            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"BROADCAST_INPUT"});
-            $this->codeInC[$this->currentType][] = "\" );\n";
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+
+            $this->codeInC[$this->currentType][] = " );\n";
             break;
 
          case "event_broadcastandwait":						//广播并等待
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"BROADCAST_INPUT"});
-            $this->codeInC[$this->currentType][] = "\" );\n";
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( ";
+            //$this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"BROADCAST_INPUT"});
+
+            $strARGNAME="BROADCAST_INPUT";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{"BROADCAST_OPTION"}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][] = " );\n";
             break;
 
          case "event_broadcast_menu":						//广播菜单
-            $this->codeInC[$this->currentType][] = trim($Block->{"fields"}->{"BROADCAST_OPTION"}->{"value"});		//广播消息都是字符串
+            //$this->codeInC[$this->currentType][] = trim($Block->{"fields"}->{"BROADCAST_OPTION"}->{"value"});		//广播消息都是字符串
             break;
 
          /**************************EVENT 事件**************************/
@@ -307,26 +332,20 @@ class Scratch3ToC
          case "motion_goto":							//移到预设目标位置
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
 
+            $strARGNAME="TO";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
 
-if($Block->{"inputs"}->{"TO"}->{'block'}!=$Block->{"inputs"}->{"TO"}->{'shadow'})
-{
-   if($Block->{"inputs"}->{"TO"}->{'shadow'}!='null')
-   {
-print_r($this->Blocks);
-echo "删除".$Block->{"inputs"}->{"TO"}->{'shadow'};
-      unset($this->Blocks->{$Block->{"inputs"}->{"TO"}->{'shadow'}});
-print_r($this->Blocks);
-   }
-}
-            //$this->codeInC[$this->currentType][]= $this->convertCode($this->Blocks->{$Block->{"inputs"}->{"TO"}->{'block'}});
-
-
-            $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"TO"});
             $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "motion_goto_menu":						//移到预设目标位置的选项菜单
-            $this->codeInC[$this->currentType][]= '"'.$Block->{"fields"}->{"TO"}->{"value"}.'"';
             break;
 
          case "motion_pointindirection":					//移到“随机位置/鼠标指针”
@@ -336,13 +355,22 @@ print_r($this->Blocks);
             break;
 
          case "motion_pointtowards":						//面向n度方向/面向角色
-            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"TOWARDS"});
-            $this->codeInC[$this->currentType][]= "\" );\n";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
+
+            $strARGNAME="TOWARDS";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "motion_pointtowards_menu":					//面向角色方向选项
-            $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"TOWARDS"}->{"value"};
             break;
 
          case "motion_changexby":						//将x坐标增加
@@ -389,12 +417,24 @@ print_r($this->Blocks);
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"SECS"});
             $this->codeInC[$this->currentType][]= " , ";
-            $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"TO"});
+            //$this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"TO"});
+
+            $strARGNAME="TO";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+
             $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "motion_glideto_menu":						//n秒内滑行到目标菜单选项
-            $this->codeInC[$this->currentType][]= "\"".$Block->{"fields"}->{"TO"}->{"value"}."\"";		//此处的双引号为特例，其它都放在调用里，待研究。
+            //$this->codeInC[$this->currentType][]= "\"".$Block->{"fields"}->{"TO"}->{"value"}."\"";		//此处的双引号为特例，其它都放在调用里，待研究。
             break;
 
          case "motion_ifonedgebounce":						//碰到边缘就反弹
@@ -436,13 +476,17 @@ print_r($this->Blocks);
 
          case "looks_switchcostumeto":						//换成造型
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
-            $costumeBlockID=$Block->{"inputs"}->{"COSTUME"}->{"block"}==''?$Block->{"inputs"}->{"COSTUME"}->{"shadow"}:$Block->{"inputs"}->{"COSTUME"}->{"block"};
-            $Block2=$this->Blocks->{$costumeBlockID} ;
 
-            if(isset($Block2->{"fields"}->{"COSTUME"}))
-               $this->codeInC[$this->currentType][]= "\"".$Block2->{"fields"}->{"COSTUME"}->{"value"}."\"";
+            $strARGNAME="COSTUME";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
             else
-               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"COSTUME"});
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
             $this->codeInC[$this->currentType][]= " );\n";
             break;
 
@@ -466,12 +510,23 @@ print_r($this->Blocks);
 
          case "looks_switchbackdropto":						//换成背景
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
-            $backdropBlockID=$Block->{"inputs"}->{"BACKDROP"}->{"block"}==''?$Block->{"inputs"}->{"BACKDROP"}->{"shadow"}:$Block->{"inputs"}->{"BACKDROP"}->{"block"};
-            $Block2=$this->Blocks->{$backdropBlockID} ;
-            if(isset($Block2->{"fields"}->{"BACKDROP"}))
-               $this->codeInC[$this->currentType][]= "\"".$Block2->{"fields"}->{"BACKDROP"}->{"value"}."\"";
+
+            $strARGNAME="BACKDROP";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
             else
-               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"BACKDROP"});
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            //$backdropBlockID=$Block->{"inputs"}->{"BACKDROP"}->{"block"}==''?$Block->{"inputs"}->{"BACKDROP"}->{"shadow"}:$Block->{"inputs"}->{"BACKDROP"}->{"block"};
+            //$Block2=$this->Blocks->{$backdropBlockID} ;
+            //if(isset($Block2->{"fields"}->{"BACKDROP"}))
+            //   $this->codeInC[$this->currentType][]= "\"".$Block2->{"fields"}->{"BACKDROP"}->{"value"}."\"";
+            //else
+            //   $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"BACKDROP"});
             $this->codeInC[$this->currentType][]= " );\n";
             break;
 
@@ -536,9 +591,20 @@ print_r($this->Blocks);
          /**************************SOUND 声音**************************/
          case "sound_playuntildone":						//播放声音等待播完
          case "sound_play":							//播放声音
-            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"SOUND_MENU"});
-            $this->codeInC[$this->currentType][]  = "\" );\n";
+            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
+
+            $strARGNAME="SOUND_MENU";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"SOUND_MENU"});
+            $this->codeInC[$this->currentType][]  = " );\n";
             break;
 
          case "sound_changeeffectby":						//将音效增加
@@ -562,7 +628,7 @@ print_r($this->Blocks);
             break;
 
          case "sound_sounds_menu":						//播放声音等待播完
-            $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"SOUND_MENU"}->{"value"};
+            //$this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"SOUND_MENU"}->{"value"};
             break;
 
          case "sound_stopallsounds":						//停止所有声音
@@ -708,13 +774,24 @@ print_r($this->Blocks);
             break;
 
          case "control_create_clone_of":					//克隆
-            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"CLONE_OPTION"});
-            $this->codeInC[$this->currentType][]= "\" );\n";
+            $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
+
+            $strARGNAME="CLONE_OPTION";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            //$this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"CLONE_OPTION"});
+            $this->codeInC[$this->currentType][]= " );\n";
             break;
 
          case "control_create_clone_of_menu":					//克隆的菜单项
-            $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"CLONE_OPTION"}->{"value"};
+            //$this->codeInC[$this->currentType][]= $Block->{"fields"}->{"CLONE_OPTION"}->{"value"};
             break;
 
          case "control_delete_this_clone":					//删除此克隆体
@@ -743,13 +820,33 @@ print_r($this->Blocks);
             break;
 
          case "sensing_keypressed":						//探测某按键是否被按下
-            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( \"";
+            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( ";
+
+
+            $strARGNAME="KEY_OPTION";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+/*
             if(isset($Block->{"inputs"}->{"KEY_OPTION"}))
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"KEY_OPTION"});
             else
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"BROADCAST_OPTION"});
-            $this->codeInC[$this->currentType][]= "\" )";
+*/
+
+            $this->codeInC[$this->currentType][]= " )";
             break;
+
+         case "sensing_keyoptions":						//按键
+            //$this->codeInC[$this->currentType][]= $Block->{"fields"}->{"KEY_OPTION"}->{"value"};
+            break;
+
 
          case "sensing_dayssince2000":						//自2000年开始至今的天数
             $this->codeInC[$this->currentType][]= $Block->{"opcode"}."()";
@@ -759,10 +856,6 @@ print_r($this->Blocks);
             $this->codeInC[$this->currentType][]= $Block->{"opcode"}."()";
             break;
 
-         case "sensing_keyoptions":						//按键
-            $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"KEY_OPTION"}->{"value"};
-            break;
-
          case "sensing_setdragmode":						//设置角色是否允许被拖拽
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( \"";
             $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"DRAG_MODE"}->{"value"};
@@ -770,14 +863,24 @@ print_r($this->Blocks);
             break;
 
          case "sensing_distanceto":						//获取到目标的距离
-            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"DISTANCETOMENU"});
-            $this->codeInC[$this->currentType][]  = "\" )";
+            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( ";
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"DISTANCETOMENU"});
 
+            $strARGNAME="DISTANCETOMENU";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][]  = " )";
             break;
 
          case "sensing_distancetomenu":						//获取到目标的距离的菜单选项
-            $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"DISTANCETOMENU"}->{"value"};
+            //$this->codeInC[$this->currentType][]= $Block->{"fields"}->{"DISTANCETOMENU"}->{"value"};
             break;
 
          case "sensing_answer":							//询问的答案
@@ -809,13 +912,24 @@ print_r($this->Blocks);
             break;
 
          case "sensing_touchingobject":						//碰到对象
-            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"TOUCHINGOBJECTMENU"});
-            $this->codeInC[$this->currentType][]  = "\" )";
+            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( ";
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"TOUCHINGOBJECTMENU"});
+
+            $strARGNAME="TOUCHINGOBJECTMENU";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][]  = " )";
             break;
 
          case "sensing_touchingobjectmenu":					//碰到对象的选项菜单
-            $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"TOUCHINGOBJECTMENU"}->{"value"};
+            //$this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"TOUCHINGOBJECTMENU"}->{"value"};
             break;
 
          case "sensing_current":						//当前的年月日时分秒
@@ -825,15 +939,26 @@ print_r($this->Blocks);
             break;
 
          case "sensing_of":							//获取对象的某项参数
-            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( \"";
-            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"OBJECT"});
-            $this->codeInC[$this->currentType][]  = "\",\"";
+            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( ";
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"OBJECT"});
+
+            $strARGNAME="OBJECT";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][]  = ",\"";
             $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"PROPERTY"}->{"value"};
             $this->codeInC[$this->currentType][]  = "\" )";
             break;
 
          case "sensing_of_object_menu":						//对象菜单
-            $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"OBJECT"}->{"value"};
+            //$this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"OBJECT"}->{"value"};
             break;
 
          case "sensing_resettimer":						//计时器归零
@@ -1303,7 +1428,18 @@ print_r($this->Blocks);
          case "pen_changePenColorParamBy":       				//将笔的参数增加
          case "pen_setPenColorParamTo":          				//将笔的参数设为
             $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."( ";
-            $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"COLOR_PARAM"});
+
+            $strARGNAME="COLOR_PARAM";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{"colorParam"}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            //$this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"COLOR_PARAM"});
             $this->codeInC[$this->currentType][] = " ,";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"VALUE"});
             $this->codeInC[$this->currentType][] = " );\n";
@@ -1317,7 +1453,7 @@ print_r($this->Blocks);
             break;
 
          case "pen_menu_colorParam":             				//将笔的粗细设为
-            $this->codeInC[$this->currentType][]   = "\"".$Block->{"fields"}->{"colorParam"}->{"value"}."\"";
+            //$this->codeInC[$this->currentType][]   = "\"".$Block->{"fields"}->{"colorParam"}->{"value"}."\"";
             break;
 
          case "pen_stamp":							//图章
@@ -1334,7 +1470,18 @@ print_r($this->Blocks);
 
          case "music_playDrumForBeats":						//击打乐器n拍
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
-            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"DRUM"});
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"DRUM"});
+
+            $strARGNAME="DRUM";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
             $this->codeInC[$this->currentType][]  = " , ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"BEATS"});
             $this->codeInC[$this->currentType][]  = " );\n";
@@ -1356,7 +1503,18 @@ print_r($this->Blocks);
 
          case "music_setInstrument":						//将乐器设为
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
-            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"INSTRUMENT"});
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"INSTRUMENT"});
+
+            $strARGNAME="INSTRUMENT";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
             $this->codeInC[$this->currentType][]  = " );\n";
             break;
 
@@ -1377,7 +1535,7 @@ print_r($this->Blocks);
             break;
 
          case "music_menu_DRUM":						//乐器列表
-            $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"DRUM"}->{"value"};
+            //$this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"DRUM"}->{"value"};
             break;
 
          case "note":								//音符
@@ -1385,11 +1543,80 @@ print_r($this->Blocks);
             break;
 
          case "music_menu_INSTRUMENT":						//乐器
-            $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"INSTRUMENT"}->{"value"};
+            //$this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"INSTRUMENT"}->{"value"};
             break;
 
          /**************************MUSIC 音乐**************************/
 
+         /**************************videoSensing 视频侦测**************************/
+
+         case "videoSensing_whenMotionGreaterThan":				//当视频运动>10
+            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"REFERENCE"});
+            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->nLeftPadding++;
+            break;
+
+         case "videoSensing_videoOn":						//相对于角色的视频运动
+            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"SUBJECT"});
+
+            $strARGNAME="SUBJECT";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][]  = " , ";
+            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"ATTRIBUTE"});
+
+            $strARGNAME="ATTRIBUTE";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][]  = " );\n";
+            break;
+
+         case "videoSensing_videoToggle":					//开启摄像头
+            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"VIDEO_STATE"});
+
+            $strARGNAME="VIDEO_STATE";
+            if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
+            {
+               $this->codeInC[$this->currentType][]= '"'.$this->Blocks->{$Block->{"inputs"}->{$strARGNAME}->{"block"}}->{"fields"}->{$strARGNAME}->{"value"}.'"';  //shadow指向了block，就是block；否则就是shadow。
+            }
+            else
+            {
+               $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
+            }
+
+            $this->codeInC[$this->currentType][]  = " );\n";
+            break;
+
+         case "videoSensing_setVideoTransparency":				//将视频透明度设为
+            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"TRANSPARENCY"});
+            $this->codeInC[$this->currentType][]  = " );\n";
+            break;
+
+
+
+         case "videoSensing_menu_SUBJECT":
+         case "videoSensing_menu_ATTRIBUTE":
+         case "videoSensing_menu_VIDEO_STATE":
+            break;
+         /**************************videoSensing 视频侦测**************************/
 
          //自制扩展
          /**************************CHATTINGROOM 互动工具**************************/
