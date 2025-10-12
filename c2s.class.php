@@ -506,7 +506,7 @@ class CToScratch3
 
       //视频侦测
 
-      "videoSensing_whenMotionGreaterThan"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("REFERENCE","math_number","NUM","10"))),	
+      "videoSensing_whenMotionGreaterThan"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("REFERENCE","math_number","NUM"))),	
       "videoSensing_videoOn"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBJECT","videoSensing_menu_SUBJECT","SUBJECT","this sprite"),Array("ATTRIBUTE","videoSensing_menu_ATTRIBUTE","ATTRIBUTE","motion"))),	
       "videoSensing_videoToggle"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("VIDEO_STATE","videoSensing_menu_VIDEO_STATE","VIDEO_STATE","on"))),	
       "videoSensing_setVideoTransparency"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("TRANSPARENCY","math_number","NUM","50"))),	
@@ -546,6 +546,7 @@ class CToScratch3
       "control_start_as_clone"			=>0,
       "event_whenstageclicked"			=>0,
       "chattingroom_whenChatMessageComes"	=>0,
+      "videoSensing_whenMotionGreaterThan"	=>0,
      // "control_wait_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
      // "control_repeat_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
      // "control_repeat"				=>0,//有包含的也不能删除next，除非后面真的没代码了。
@@ -1949,6 +1950,9 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
             //这一个带fields参数和inputs参数的HAT积木
             case "event_whengreaterthan":				//当参数大于
 
+            case "videoSensing_whenMotionGreaterThan":			//当视频运动大于
+
+
                $thisUID=array_pop($this->UIDS);				//先出 thisUID
                $parentUID=array_pop($this->UIDS);			//后出 parentUID
                $nextUID=UID();						//生成 nextUID
@@ -1958,9 +1962,10 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                $i=4;							//若无参数，从此开始获取子积木
                $nBraceCounter=1;
 
+print_r($arrCode);
                if($arrCode[2]!=")")					//此处如果是“)”，就表示没有任何参数
                {
-                  $strValue1=trim($arrCode[2],"\"");			//这几个HATS，第一个参数都是fields类型，不会有复杂的公式出现。
+                  $strValue1=trim($arrCode[2],'"');			//这几个HATS，第一个参数都是fields类型，不会有复杂的公式出现。追加一个videoSensing_whenMotionGreaterThan，第一个参数不是fields，情况变复杂了。
 
                   if($arrCode[3]==",")					//带参数的HATS类都有这个特征
                   {
@@ -1980,6 +1985,8 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                      $i=5;						//如果只有一个参数，那么后面子积木代码从此处开始检测
                   }
                }
+
+               //echo "[".$strValue1.'|'.$strValue2."]";		//如果是videoSensing_whenMotionGreaterThan的话，$strValue1有数据
 
                $childFunc=Array();					//获取子积木数据
                while($i<$nCodeLength)
@@ -2025,7 +2032,10 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                {
                   $nINPUTS=count($arrFieldsInfo['inputs']);
 
-                  $arrValue=Array($strValue2);
+                  if($opcode=="videoSensing_whenMotionGreaterThan")	//videoSensing_whenMotionGreaterThan，则第一个参数有效，其它hats，第一个为fields
+                     $arrValue=Array($strValue1);
+                  else
+                     $arrValue=Array($strValue2);
 
                   if($nINPUTS>1)					//存在多个inputs时，对相关参数进行拆分
                      $arrValue=explode(",",$strValue2);			//当参数里有函数random的调用时，这个拆分会有问题。但目前inputs最多也就一个，以后再调整。
@@ -2039,7 +2049,17 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                      $strArgument=$arrValue[$g];			//拼接成字符串
 
                      echo "解析前的参数：".$strArgument;
-                     if(!is_numeric($strArgument))					//非纯数字的参数，利用RPN算法进行分解。
+
+                     if(isset($this->arrVariableUIDS[$strArgument]))//in_array(trim($arrLoopCondition),$this->arrVariables) )	//参数是已定义的变量，生成该变量的积木块，此处不需要shadow，shadow由repeat自己生成。
+                     {
+                         $arrChildUID[0]=UID();
+                         array_push($this->Blockly, '{"xx":"2","id": "'.$arrChildUID[0].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.UID().'","value": "'.$strArgument.'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": false}');
+                     }
+                     else if(is_numeric($strArgument))
+                     {
+                        $parsedArgData[$g]=trim($strArgument);			//纯数字参数，注意去除空格。
+                     }
+                     else if(!is_numeric($strArgument))					//非纯数字的参数，利用RPN算法进行分解。
                      {
                         $arg=NULL;
                         if($this->rpn_calc-> init($strArgument))			//将四则混合运算字符串交由RPN来完成解析
@@ -2049,19 +2069,19 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                         {
                            $parsedArgData[$g]=$arg;				//解析成功，返回经RPN解析后的四则不混合运算数据
                         }
-                     }
-                     else $parsedArgData[$g]=trim($strArgument);			//纯数字参数，注意去除空格。
 
-                     $arrChildUID=$this->parseCalculationExpression($arrFieldsInfo["inputs"][$g],$parsedArgData[$g],$thisUID); //解析的过程中，也会创建相应的积木数据，最终返回UID
+                        $arrChildUID=$this->parseCalculationExpression($arrFieldsInfo["inputs"][$g],$parsedArgData[$g],$thisUID); //解析的过程中，也会创建相应的积木数据，最终返回UID
+
+                     }
 
                      //只要是文本或数字的参数，都要有Shadow，这个shadow不在parseCalculationExpression里创建。
 
-                     if($arrChildUID[1]!=NULL)
+                     if($arrChildUID[0]!=NULL)
                      {
-                     //VAR类型参数需要补一个shadow，BOOL类型不需要。
-                     array_push($this->Blockly,'{"id": "'.$strShadowUID.'","opcode": "'.$arrFieldsInfo["inputs"][$g][1].'","inputs": {},"fields": {"'.$arrFieldsInfo["inputs"][$g][2].'": {"name": "'.$arrFieldsInfo["inputs"][$g][2].'","value": "10"  }},"next": null,"topLevel": false,"parent":null,"shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
-                     //拼接主积木的参数数据
-                     $strInputs.=($g>0?',':'') . ' "'.$arrFieldsInfo["inputs"][$g][0].'": { "name": "'.$arrFieldsInfo["inputs"][$g][0].'", "block": "'.$arrChildUID[0].'", "shadow": "'.$strShadowUID.'"  }';
+                        //VAR类型参数需要补一个shadow，BOOL类型不需要。
+                        array_push($this->Blockly,'{"id": "'.$strShadowUID.'","opcode": "'.$arrFieldsInfo["inputs"][$g][1].'","inputs": {},"fields": {"'.$arrFieldsInfo["inputs"][$g][2].'": {"name": "'.$arrFieldsInfo["inputs"][$g][2].'","value": "10"  }},"next": null,"topLevel": false,"parent":null,"shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
+                        //拼接主积木的参数数据
+                        $strInputs.=($g>0?',':'') . ' "'.$arrFieldsInfo["inputs"][$g][0].'": { "name": "'.$arrFieldsInfo["inputs"][$g][0].'", "block": "'.$arrChildUID[0].'", "shadow": "'.$strShadowUID.'"  }';
                      }
                      else
                      {
@@ -2089,7 +2109,7 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
              //这个非HAT积木，比较特别
             //具有包含作用的积木  if...then... if...else...  do...while,以及自定义模块
             case "do":
-print_r($arrCode);
+//print_r($arrCode);
 
                $thisUID=array_pop($this->UIDS);			//出栈：thisUID
                $parentUID=array_pop($this->UIDS);		//出栈：parentUID
@@ -3227,11 +3247,9 @@ print_r($arrFuncData);
          case "data_listcontainsitem":
 
 
-
-         case "videoSensing_whenMotionGreaterThan"://	=>	Array("fields"=>Array(),"inputs"=>Array(Array("REFERENCE","math_number","NUM","10"))),	
-         case "videoSensing_videoOn"://			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBJECT","videoSensing_menu_SUBJECT","SUBJECT","this sprite"),Array("ATTRIBUTE","videoSensing_menu_ATTRIBUTE","ATTRIBUTE","motion")),	
-         case "videoSensing_videoToggle"://		=>	Array("fields"=>Array(),"inputs"=>Array(Array("VIDEO_STATE","videoSensing_menu_VIDEO_STATE","REFERENCE"))),	
-         case "videoSensing_setVideoTransparency"://	=>	Array("fields"=>Array(),"inputs"=>Array(Array("TRANSPARENCY","math_number","NUM","50")),	
+         case "videoSensing_videoOn":
+         case "videoSensing_videoToggle":
+         case "videoSensing_setVideoTransparency":
 
 
 
@@ -4700,8 +4718,10 @@ print_r($arrArgVal);
    ************************************************************************************************************************/
    private function parseCalculationExpression($arrChildArgBlockInfo,$arrCalExpData,$parentUID)
    {
-echo "BUGGGGGGGGGGGGGGGGGGGGG\n";
+echo "??BUGGGGGGGGGGGGGGGGGGGGG\n";
+echo "CALEXPDATA\n";
 print_r($arrCalExpData);
+echo "']]]";
       /********************************************************************************************************************
 
          本函数主要生成算术计算和函数调用这两类积木。
@@ -4992,7 +5012,7 @@ print_r($this->arrBlockToParent);
                                                   Array("字段名1","参数1类型")				//此处“参数1类型”数据为可选。有些积木有多个参数，或者一个都没有。
                                            ),
                                    "inputs"=>Array(						//接收从键盘输入的文本或数字参数，也可接收变量或计算公式。
-                                                  Array("字段名2","参数2的opcode","参数2类型")		//有些积木有多个参数，或者一个都没有。
+                                                  Array("字段名2","参数2的opcode","参数2类型","默认值")		//有些积木有多个参数，或者一个都没有。
                                            )
                              )
                          例如：
@@ -5005,6 +5025,7 @@ print_r($this->arrBlockToParent);
                      $arrChildArgBlockInfo[2]=$argInfo["inputs"][0][2];			//参数数据类型
                      $arrChildArgBlockInfo[3]=$argInfo["inputs"][0][3];			//参数默认值
 
+print_r($arrChildArgBlockInfo);
                   }
                   else									//无inputs参数
                   {
@@ -5234,6 +5255,7 @@ echo "继续解构。";
       else							//如果$arrCalExpData非数组，则它就是一个普通的常量/变量
       {
          $arrCalExpData2=trim($arrCalExpData,'"');
+print_r($arrCalExpData);
 
          if(isset($this->arrVariableUIDS[$arrCalExpData]))//in_array($arrCalExpData,$this->arrVariables))		//对变量直接引用
          {
@@ -5260,9 +5282,15 @@ echo "继续解构。";
             else
                $arrCalExpData=$arrCalExpData2;
 
-            //print_r($arrChildArgBlockInfo);
+echo "dddddddd:";
+print_r($arrCalExpData);
+
+            print_r($arrChildArgBlockInfo);
             //block
             array_push($this->Blockly, '{"d":"18","id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrCalExpData.'"'.(isset($arrChildArgBlockInfo[3])?' , "variableType": "broadcast_msg"':'').'}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
+
+//            array_push($this->Blockly, '{"d":"18","id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrCalExpData.'"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
+
             $arrChildBlockUID[1]=NULL;
          }
          return  $arrChildBlockUID;//Array( 0=>block, 1=>shadow );
