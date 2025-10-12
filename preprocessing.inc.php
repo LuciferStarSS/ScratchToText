@@ -134,6 +134,8 @@
          'data_itemoflist','data_itemnumoflist','data_lengthoflist','data_listcontainsitem',
          //音乐
          'music_getTempo',
+         //视频侦测
+         'videoSensing_videoOn',
          //数学函数
          'abs','ceiling','floor','sqrt','sinf','cos','tan','atan','asin','acos','ln','log','e ^','10 ^', //sin函数会跟sesing冲突，所以改成了sinf，在匹配后，会换成sin。
       );
