@@ -327,7 +327,7 @@ class CToScratch3
                            Array("字段名1","参数1类型")				//此处“参数1类型”数据为可选。有些积木有多个参数，或者一个都没有。
                        ),
                "inputs"=>Array(						//接收从键盘输入的文本或数字参数，也可接收变量或计算公式。
-                           Array("字段名2","参数2的opcode","参数2类型")		//有些积木有多个参数，或者一个都没有。
+                           Array("字段名2","参数2的opcode","参数2类型","默认值")		//有些积木有多个参数，或者一个都没有。
                        )
           )
 
@@ -335,20 +335,20 @@ class CToScratch3
    private  $arrArgumentConfig  = Array(
 
       //运动
-      "motion_movesteps"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STEPS","math_number","NUM"))),						//移动10步
-      "motion_turnright"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DEGREES","math_number","NUM"))),						//右转
-      "motion_turnleft"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("DEGREES","math_number","NUM"))),						//左转
-      "motion_goto"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TO","motion_goto_menu","TO"))),						//移到
-      "motion_gotoxy"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("X","math_number","NUM"),Array("Y","math_number","NUM"))),		//移到XY
-      "motion_glideto" 				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SECS","math_number","NUM"),Array("TO","motion_glideto_menu","TO"))),	//滑行到
-      "motion_glidesecstoxy"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SECS","math_number","NUM"),Array("X","math_number","NUM"),		//n秒内滑行到XY
-						                                          Array("Y","math_number","NUM"))),
-      "motion_pointindirection"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DIRECTION","math_angle","NUM"))),					//面向
-      "motion_pointtowards" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("TOWARDS","motion_pointtowards_menu","TOWARDS"))),			//面向目标
-      "motion_changexby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DX","math_number","NUM"))),						//X坐标增加
-      "motion_setx"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("X","math_number","NUM"))),						//X坐标设为
-      "motion_changeyby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DY","math_number","NUM"))),						//Y坐标增加
-      "motion_sety"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("Y","math_number","NUM"))),						//Y坐标设为
+      "motion_movesteps"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STEPS","math_number","NUM","10"))),						//移动10步
+      "motion_turnright"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DEGREES","math_number","NUM","90"))),						//右转
+      "motion_turnleft"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("DEGREES","math_number","NUM","90"))),						//左转
+      "motion_goto"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TO","motion_goto_menu","TO","_random_"))),						//移到
+      "motion_gotoxy"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("X","math_number","NUM","0"),Array("Y","math_number","NUM","0"))),		//移到XY
+      "motion_glideto" 				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SECS","math_number","NUM","1"),Array("TO","motion_glideto_menu","TO","_random_"))),	//滑行到
+      "motion_glidesecstoxy"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SECS","math_number","NUM","1"),Array("X","math_number","NUM","0"),		//n秒内滑行到XY
+						                                          Array("Y","math_number","NUM","0"))),
+      "motion_pointindirection"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DIRECTION","math_angle","NUM","90"))),					//面向
+      "motion_pointtowards" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("TOWARDS","motion_pointtowards_menu","TOWARDS","_mouse_"))),			//面向目标
+      "motion_changexby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DX","math_number","NUM","1"))),						//X坐标增加
+      "motion_setx"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("X","math_number","NUM","0"))),						//X坐标设为
+      "motion_changeyby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DY","math_number","NUM","1"))),						//Y坐标增加
+      "motion_sety"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("Y","math_number","NUM","0"))),						//Y坐标设为
       "motion_ifonedgebounce"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//遇到边缘就反弹
       "motion_setrotationstyle" 		=>	Array("fields"=>Array(Array("STYLE")),"inputs"=>Array()),								//设置旋转方式
 
@@ -357,23 +357,23 @@ class CToScratch3
       "motion_direction"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//方向	
 
       //外观
-      "looks_sayforsecs" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT"),Array("SECS","math_number","NUM"))),		//说几秒
-      "looks_say"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT"))),						//说
-      "looks_thinkforsecs" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT"),Array("SECS","math_number","NUM"))),		//想几秒
-      "looks_think" 				=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT"))),						//想
-      "looks_switchcostumeto" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COSTUME","looks_costume","COSTUME"))),					//切换造型为
+      "looks_sayforsecs" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT","你好"),Array("SECS","math_number","NUM","1"))),		//说几秒
+      "looks_say"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT","你好"))),						//说
+      "looks_thinkforsecs" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT","你好"),Array("SECS","math_number","NUM","1"))),		//想几秒
+      "looks_think" 				=>	Array("fields"=>Array(),"inputs"=>Array(Array("MESSAGE","text","TEXT","你好"))),						//想
+      "looks_switchcostumeto" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COSTUME","looks_costume","COSTUME","造型1"))),					//切换造型为
       "looks_nextcostume"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//下一个造型
-      "looks_switchbackdropto" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BACKDROP","looks_backdrops","BACKDROP"))),				//切换背景为
+      "looks_switchbackdropto" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BACKDROP","looks_backdrops","BACKDROP","背景1"))),				//切换背景为
       "looks_nextbackdrop"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//下一个背景
-      "looks_changesizeby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("CHANGE","math_number","NUM"))),						//将大小增加
-      "looks_setsizeto"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SIZE","math_number","NUM"))),						//将大小设为
-      "looks_changeeffectby"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("CHANGE","math_number","NUM"))),				//将特效增加
-      "looks_seteffectto"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("VALUE","math_number","NUM"))),				//将特效设为
+      "looks_changesizeby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("CHANGE","math_number","NUM","1"))),						//将大小增加
+      "looks_setsizeto"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SIZE","math_number","NUM","0"))),						//将大小设为
+      "looks_changeeffectby"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("CHANGE","math_number","NUM","1"))),				//将特效增加
+      "looks_seteffectto"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("VALUE","math_number","NUM","0"))),				//将特效设为
       "looks_cleargraphiceffects"		=>	Array("fields"=>Array(),"inputs"=>Array()),										//清除图像特效
       "looks_show"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//显示
       "looks_hide"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//隐藏
-      "looks_goforwardbackwardlayers"		=>	Array("fields"=>Array(Array("FORWARD_BACKWARD","text")),"inputs"=>Array(Array("NUM","math_integer","NUM"))),		//上/下移一层
-      "looks_gotofrontback"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("FRONT_BACK","text","TEXT"))),						//置于顶/底层
+      "looks_goforwardbackwardlayers"		=>	Array("fields"=>Array(Array("FORWARD_BACKWARD","text")),"inputs"=>Array(Array("NUM","math_integer","NUM","1"))),		//上/下移一层
+      "looks_gotofrontback"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("FRONT_BACK","text","TEXT","front"))),						//置于顶/底层
       "looks_costume" 				=>	Array("fields"=>Array(),"inputs"=>Array()),		//三个变量，待处理。
       "looks_backdrops" 			=>	Array("fields"=>Array(),"inputs"=>Array()),
       "looks_size" 				=>	Array("fields"=>Array(),"inputs"=>Array()),
@@ -381,12 +381,12 @@ class CToScratch3
       "looks_backdropnumbername"		=>	Array("fields"=>Array(Array("NUMBER_NAME")),"inputs"=>Array()),
 
       //声音
-      "sound_playuntildone"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SOUND_MENU","sound_sounds_menu","SOUND_MENU"))),				//播放声音等待播完
-      "sound_play"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SOUND_MENU","sound_sounds_menu","SOUND_MENU"))),				//播放声音
-      "sound_changeeffectby"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("VALUE","math_number","NUM"))),				//将音效增加
-      "sound_seteffectto"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("VALUE","math_number","NUM"))),				//将音效设为
-      "sound_changevolumeby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("VOLUME","math_number","NUM"))),						//将音量增加
-      "sound_setvolumeto"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("VOLUME","math_number","NUM"))),						//将音量设为
+      "sound_playuntildone"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SOUND_MENU","sound_sounds_menu","SOUND_MENU","喵"))),				//播放声音等待播完
+      "sound_play"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SOUND_MENU","sound_sounds_menu","SOUND_MENU","喵"))),				//播放声音
+      "sound_changeeffectby"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("VALUE","math_number","NUM","1"))),				//将音效增加
+      "sound_seteffectto"			=>	Array("fields"=>Array(Array("EFFECT")),"inputs"=>Array(Array("VALUE","math_number","NUM","0"))),				//将音效设为
+      "sound_changevolumeby"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("VOLUME","math_number","NUM","1"))),						//将音量增加
+      "sound_setvolumeto"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("VOLUME","math_number","NUM","0"))),						//将音量设为
       "sound_volume"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//音量
       "sound_sounds_menu"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//播放声音等待播完
       "sound_stopallsounds"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//停止所有声音
@@ -397,82 +397,82 @@ class CToScratch3
       "event_whenkeypressed"			=>	Array("fields"=>Array(Array("KEY_OPTION")),"inputs"=>Array()),										//当按键被点击
       "event_whenthisspriteclicked"		=>	Array("fields"=>Array(),"inputs"=>Array()),										//当角色被点击
       "event_whenbackdropswitchesto"		=>	Array("fields"=>Array(Array("BACKDROP")),"inputs"=>Array()),										//当背景切换到
-      "event_whengreaterthan"			=>	Array("fields"=>Array(Array("WHENGREATERTHANMENU")),"inputs"=>Array(Array("VALUE","math_number","NUM"))),										//当值大于
+      "event_whengreaterthan"			=>	Array("fields"=>Array(Array("WHENGREATERTHANMENU")),"inputs"=>Array(Array("VALUE","math_number","NUM","0"))),										//当值大于
       "event_whenbroadcastreceived"		=>	Array("fields"=>Array(Array("BROADCAST_OPTION","broadcast_msg")),"inputs"=>Array()),										//当接收到广播消息
       "control_start_as_clone"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//当克隆开始
       "event_whenstageclicked"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//当舞台被点击
-      "event_broadcast" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BROADCAST_INPUT","event_broadcast_menu","BROADCAST_OPTION","broadcast_msg"))),	//广播
-      "event_broadcastandwait"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BROADCAST_INPUT","event_broadcast_menu","BROADCAST_OPTION","broadcast_msg"))),	//广播消息
+      "event_broadcast" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BROADCAST_INPUT","event_broadcast_menu","BROADCAST_OPTION","消息1","broadcast_msg"))),	//广播
+      "event_broadcastandwait"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BROADCAST_INPUT","event_broadcast_menu","BROADCAST_OPTION","消息1","broadcast_msg"))),	//广播消息
 
       //控制
       "control_stop"				=>	Array("fields"=>Array(Array("STOP_OPTION","text")),"inputs"=>Array()),		//停止
-      "control_wait"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("DURATION","math_positive_number","NUM"))),				//等待
+      "control_wait"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("DURATION","math_positive_number","NUM","1"))),				//等待
       /****************************↓********↓*****↓**已*经*在*主*程*序*中*实*现*，*不*需*要*这*些*配*置*信*息*了*。**↓****↓*****↓******↓****************************
-      "control_forever"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBSTACK","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//等待<条件>
-      "control_repeat_until"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBSTACK","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//重复执行直到
+      "control_forever"				=>	Array("fields"=>Array(),"inputs"=>Array()),		//等待<条件>
+      "control_repeat_until"			=>	Array("fields"=>Array(),"inputs"=>Array()),		//重复执行直到
       "control_wait_until"			=>	Array("fields"=>Array(),"inputs"=>Array()),		//重复执行直到
-      "control_repeat"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TIMES","math_whole_number","NUM"),Array("SUBSTACK","",""))),		//重复执行
+      "control_repeat"				=>	Array("fields"=>Array(),"inputs"=>Array()),		//重复执行
       "for"					=>	Array("fields"=>Array(),"inputs"=>Array()),										//这4个，仅在将代码按换行拆分时使用。
       "if"					=>	Array("fields"=>Array(),"inputs"=>Array()),
       "do"					=>	Array("fields"=>Array(),"inputs"=>Array()),
       "while"					=>	Array("fields"=>Array(),"inputs"=>Array()),
       *****************************↑********↑*****↑**已*经*在*主*程*序*中*实*现*，*不*需*要*这*些*配*置*信*息*了*。**↑****↑*****↑******↑****************************/
       "control_delete_this_clone"		=>	Array("fields"=>Array(),"inputs"=>Array()),										//删除此克隆体
-      "control_create_clone_of"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("CLONE_OPTION","control_create_clone_of_menu","CLONE_OPTION"))),		//克隆
+      "control_create_clone_of"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("CLONE_OPTION","control_create_clone_of_menu","CLONE_OPTION","_myself_"))),		//克隆
 
       //侦测
       "sensing_username"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//当前用户名
       "sensing_mousex"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//鼠标X坐标
       "sensing_mousey"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//鼠标Y坐标
       "sensing_mousedown"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//探测鼠标是否被按下
-      "sensing_keypressed"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("KEY_OPTION","sensing_keyoptions","KEY_OPTION"))),			//探测某按键是否被按下
+      "sensing_keypressed"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("KEY_OPTION","sensing_keyoptions","KEY_OPTION","space"))),			//探测某按键是否被按下
       "sensing_dayssince2000"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//自2000年开始至今的天数
       "sensing_loudness"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//响度
       //"sensing_keyoptions"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("KEY_OPTION","text","TEXT"))),						//按键
       "sensing_setdragmode"			=>	Array("fields"=>Array(Array("DRAG_MODE","text")),"inputs"=>Array()),							//设置角色是否允许被拖拽
-      "sensing_distanceto"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DISTANCETOMENU","sensing_distancetomenu","DISTANCETOMENU"))),		//到目标的距离
-      "sensing_distancetomenu"			=>	Array("fields"=>Array(Array("DISTANCETOMENU","text")),"inputs"=>Array(Array("DISTANCETOMENU","text","TEXT"))),		//获取到目标的距离的菜单选项
+      "sensing_distanceto"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DISTANCETOMENU","sensing_distancetomenu","DISTANCETOMENU","_mouse_"))),		//到目标的距离
+      "sensing_distancetomenu"			=>	Array("fields"=>Array(Array("DISTANCETOMENU","text")),"inputs"=>Array(Array("DISTANCETOMENU","text","TEXT","_mosue_"))),		//获取到目标的距离的菜单选项
       "sensing_answer"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//询问的答案
-      "sensing_askandwait"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("QUESTION","text","TEXT"))),						//询问并等待
+      "sensing_askandwait"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("QUESTION","text","TEXT","问题"))),						//询问并等待
       "sensing_timer"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//定时器
-      "sensing_touchingcolor" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR","colour_picker" ,"COLOUR"))),					//碰到颜色
-      "sensing_coloristouchingcolor" 		=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR","colour_picker" ,"COLOUR"),
-						                                                Array("COLOR2","colour_picker" ,"COLOUR"))),					//颜色碰到颜色
-      "sensing_touchingobject"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("TOUCHINGOBJECTMENU","sensing_touchingobjectmenu","TOUCHINGOBJECTMENU"))),//碰到对象
+      "sensing_touchingcolor" 			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR","colour_picker" ,"COLOUR","#ff0000"))),					//碰到颜色
+      "sensing_coloristouchingcolor" 		=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR","colour_picker" ,"COLOUR","#ff0000"),
+						                                                Array("COLOR2","colour_picker" ,"COLOUR","#00ff00"))),					//颜色碰到颜色
+      "sensing_touchingobject"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("TOUCHINGOBJECTMENU","sensing_touchingobjectmenu","TOUCHINGOBJECTMENU","_mouse_"))),//碰到对象
       //"sensing_touchingobjectmenu"		=>	Array("fields"=>Array(Array("TOUCHINGOBJECTMENU","text")),"inputs"=>Array(Array("TOUCHINGOBJECTMENU","sensing_touchingobjectmenu","TEXT"))),	//碰到对象的选项菜单
-      "sensing_current"				=>	Array("fields"=>Array(Array("PROPERTY","text")),"inputs"=>Array(Array("CURRENTMENU","sensing_of_object_menu","TEXT"))),	//当前的年月日时分秒
-      "sensing_of"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("OBJECT","text","TEXT"),Array("PROPERTY","text","TEXT"))),		//获取对象的某项参数
-      "sensing_of_object_menu"			=>	Array("fields"=>Array(Array("OBJECT","text")),"inputs"=>Array(Array("OBJECT","text","TEXT"))),				//对象菜单
+      "sensing_current"				=>	Array("fields"=>Array(Array("PROPERTY","text")),"inputs"=>Array(Array("CURRENTMENU","sensing_of_object_menu","TEXT","YEAR"))),	//当前的年月日时分秒
+      "sensing_of"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("OBJECT","text","TEXT","_stage_"),Array("PROPERTY","text","TEXT","_stage_"))),		//获取对象的某项参数
+      "sensing_of_object_menu"			=>	Array("fields"=>Array(Array("OBJECT","text")),"inputs"=>Array(Array("OBJECT","text","TEXT","backdrop #"))),				//对象菜单
       "sensing_resettimer"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//计时器归零
-      "colour_picker"				=>	Array("fields"=>Array(Array("COLOUR","text")),"inputs"=>Array(Array("COLOUR","text","TEXT"))),				//选取颜色
+      "colour_picker"				=>	Array("fields"=>Array(Array("COLOUR","text")),"inputs"=>Array(Array("COLOUR","text","TEXT","#ff0000"))),				//选取颜色
 
       //运算
-      "operator_mod"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
+      "operator_mod"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM","1"),Array("NUM2","math_number","NUM","1"))),		//运算的，全在代码里实现。
       "operator_add"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
       "operator_subtract"			=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
       "operator_divide"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
       "operator_multiply"			=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
-      "operator_random"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("FROM","math_number","NUM"),Array("TO","math_number","NUM"))),		//随机数
-      "operator_contains"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING1","text","TEXT"),Array("STRING2","text","TEXT"))),		//包含
-      "operator_join"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING1","text","TEXT"),Array("STRING2","text","TEXT"))),		//连接
-      "operator_round"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("NUM","math_number","NUM"))),						//四舍五入
-      "operator_length"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING","text","TEXT"))),						//字符串长度
-      "operator_mathop"				=>	Array("fields"=>Array(Array("OPERATOR")),"inputs"=>Array(Array("NUM","math_number","NUM"))),				//数学函数运算
+      "operator_random"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("FROM","math_number","NUM","1"),Array("TO","math_number","NUM","10"))),		//随机数
+      "operator_contains"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING1","text","TEXT","苹果"),Array("STRING2","text","TEXT","这里有一只苹果"))),		//包含
+      "operator_join"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING1","text","TEXT","苹果"),Array("STRING2","text","TEXT","香蕉"))),		//连接
+      "operator_round"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("NUM","math_number","NUM",""))),						//四舍五入
+      "operator_length"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING","text","TEXT","苹果"))),						//字符串长度
+      "operator_mathop"				=>	Array("fields"=>Array(Array("OPERATOR")),"inputs"=>Array(Array("NUM","math_number","NUM",""))),				//数学函数运算
 
       //变量
-      "data_setvariableto"			=>	Array("fields"=>Array(Array("VARIABLE","")),"inputs"=>Array(Array("VALUE","text","TEXT"))),				//将变量设为
+      "data_setvariableto"			=>	Array("fields"=>Array(Array("VARIABLE","")),"inputs"=>Array(Array("VALUE","text","TEXT","0"))),				//将变量设为
       "data_showvariable"			=>	Array("fields"=>Array(Array("VARIABLE","")),"inputs"=>Array()),								//显示变量
       "data_hidevariable"			=>	Array("fields"=>Array(Array("VARIABLE","")),"inputs"=>Array()),								//显示变量
-      "data_changevariableby"			=>	Array("fields"=>Array(Array("VARIABLE","")),"inputs"=>Array(Array("VALUE","text","TEXT"))),				//修改列表某项数据
-      "data_addtolist"				=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("ITEM","text","TEXT"))),				//添加到列表
-      "data_itemoflist"				=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM"))),			//列表的全部数据
-      "data_deleteoflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM"))),			//删除列表某一项数据
-      "data_itemnumoflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("ITEM","text","TEXT"))),				//列表的某一项数据
-      "data_listcontainsitem"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("ITEM","text","TEXT"))),				//列表是否包含某数据	//有额外的一个参数
+      "data_changevariableby"			=>	Array("fields"=>Array(Array("VARIABLE","")),"inputs"=>Array(Array("VALUE","text","TEXT","1"))),				//修改列表某项数据
+      "data_addtolist"				=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("ITEM","text","TEXT","东西"))),				//添加到列表
+      "data_itemoflist"				=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM","1"))),			//列表的全部数据
+      "data_deleteoflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM","1"))),			//删除列表某一项数据
+      "data_itemnumoflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("ITEM","text","TEXT","东西"))),				//列表的某一项数据
+      "data_listcontainsitem"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("ITEM","text","TEXT","东西"))),				//列表是否包含某数据	//有额外的一个参数
       "data_deletealloflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array()),								//删除列表全部数据//除了列表名，无其他参数。
-      "data_insertatlist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM"),Array("ITEM","text","TEXT"))),	//插入列表//有额外的两个参数
+      "data_insertatlist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM","1"),Array("ITEM","text","TEXT","东西"))),	//插入列表//有额外的两个参数
       "data_lengthoflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array()),								//列表长度
-      "data_replaceitemoflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM"),Array("ITEM","text","TEXT"))),	//替换列表某一项数据
+      "data_replaceitemoflist"			=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array(Array("INDEX","math_integer","NUM","1"),Array("ITEM","text","TEXT","东西"))),	//替换列表某一项数据
       "data_showlist"				=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array()),								//显示列表
       "data_hidelist"				=>	Array("fields"=>Array(Array("LIST","list")),"inputs"=>Array()),								//隐藏列表
 
@@ -483,38 +483,45 @@ class CToScratch3
       "pen_stamp"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//图章
       "pen_penDown"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//落笔
       "pen_penUp"				=>	Array("fields"=>Array(),"inputs"=>Array()),										//提笔
-      "pen_setPenColorToColor"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR","colour_picker","COLOUR"))),					//设置画笔颜色
-      "pen_changePenColorParamBy"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR_PARAM","pen_menu_colorParam","colorParam"),
-						 	                                        Array("VALUE","math_number","NUM"))),						//增加画笔参数
-      "pen_setPenColorParamTo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR_PARAM","pen_menu_colorParam","colorParam"),
-						     	                                        Array("VALUE","math_number","NUM"))),						//设置画笔参数为
-      "pen_setPenSizeTo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SIZE","math_number","NUM"))),            				//将笔的粗细设为
-      "pen_changePenSizeBy"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SIZE","math_number","NUM"))),						//将比的粗细增加
+      "pen_setPenColorToColor"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR","colour_picker","COLOUR","#ff0000"))),					//设置画笔颜色
+      "pen_changePenColorParamBy"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR_PARAM","pen_menu_colorParam","colorParam","color"),
+						 	                                        Array("VALUE","math_number","NUM","10"))),						//增加画笔参数
+      "pen_setPenColorParamTo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("COLOR_PARAM","pen_menu_colorParam","colorParam","color"),
+						     	                                        Array("VALUE","math_number","NUM","50"))),						//设置画笔参数为
+      "pen_setPenSizeTo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SIZE","math_number","NUM","10"))),            				//将笔的粗细设为
+      "pen_changePenSizeBy"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SIZE","math_number","NUM","10"))),						//将比的粗细增加
       "pen_menu_colorParam"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//画笔参数菜单
 
        //音乐
-      "music_playDrumForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DRUM","text","TEXT"),Array("BEATS","math_number","NUM"))),  		//击打乐器n拍
-      "music_restForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BEATS","math_number","NUM"))),  						//休止n拍
-      "music_playNoteForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("NOTE","note","NOTE"),Array("BEATS","math_number","NUM"))),  			//演奏音符n拍
-      "music_setInstrument"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("INSTRUMENT","music_menu_INSTRUMENT","TEXT"))),  				//将乐器设为
-      "music_setTempo"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TEMPO","math_number","NUM"))),  						//将演奏速度设定为
-      "music_changeTempo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("TEMPO","math_number","NUM"))),  						//将演奏速度增加
-      "music_menu_DRUM"				=>	Array("fields"=>Array(Array("DRUM","text")),"inputs"=>Array(Array("DRUM","text","TEXT"))),  				//乐器列表
-      "music_getTempo"				=>	Array("fields"=>Array(),"inputs"=>Array()),  						//将演奏速度设定为
-      "note"					=>	Array("fields"=>Array(Array("NOTE","text")),"inputs"=>Array(Array("NOTE","math_number","NUM"))),  			//音符
+      "music_playDrumForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("DRUM","music_menu_DRUM","DRUM","1"),Array("BEATS","math_number","NUM","60"))),  		//击打乐器n拍
+      "music_restForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("BEATS","math_number","NUM","0.25"))),  						//休止n拍
+      "music_playNoteForBeats"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("NOTE","note","NOTE","1"),Array("BEATS","math_number","NUM","60"))),  		//演奏音符n拍
+      "music_setInstrument"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("INSTRUMENT","music_menu_INSTRUMENT","INSTRUMENT","0.25"))),  				//将乐器设为
+      "music_setTempo"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("TEMPO","math_number","NUM","60"))),  						//将演奏速度设定为
+      "music_changeTempo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("TEMPO","math_number","NUM","60"))),  						//将演奏速度增加
+      "music_menu_DRUM"				=>	Array("fields"=>Array(Array("DRUM","text")),"inputs"=>Array(Array("DRUM","text","TEXT",""))),  				//乐器列表
+      "music_getTempo"				=>	Array("fields"=>Array(),"inputs"=>Array()),  										//将演奏速度设定为
+      "note"					=>	Array("fields"=>Array(Array("NOTE","text")),"inputs"=>Array(Array("NOTE","math_number","NUM","60"))),  			//音符
       "music_menu_INSTRUMENT"			=>	Array("fields"=>Array(Array("INSTRUMENT","text")),"inputs"=>Array(Array("INSTRUMENT","text","TEXT"))),			//乐器菜单
+
+      //视频侦测
+
+      "videoSensing_whenMotionGreaterThan"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("REFERENCE","math_number","NUM","10"))),	
+      "videoSensing_videoOn"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBJECT","videoSensing_menu_SUBJECT","SUBJECT","this sprite"),Array("ATTRIBUTE","videoSensing_menu_ATTRIBUTE","ATTRIBUTE","motion"))),	
+      "videoSensing_videoToggle"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("VIDEO_STATE","videoSensing_menu_VIDEO_STATE","VIDEO_STATE","on"))),	
+      "videoSensing_setVideoTransparency"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("TRANSPARENCY","math_number","NUM","50"))),	
 
       //互动工具
       "chattingroom_whenChatMessageComes"	=>	Array("fields"=>Array(),"inputs"=>Array()),										//当接收到聊天消息
-      "chattingroom_sendMsgTo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("USER","text","TEXT"),Array("MSG","text","TEXT"))),			//聊天室发送消息
+      "chattingroom_sendMsgTo"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("USER","text","TEXT","用户名"),Array("MSG","text","TEXT","文本信息"))),			//聊天室发送消息
       "chattingroom_lastReceivedMsg"		=>	Array("fields"=>Array(),"inputs"=>Array()),										//聊天室接收到的最近一条消息
       "chattingroom_lastReceivedMsgSender"	=>	Array("fields"=>Array(),"inputs"=>Array()),										//最后一条未读消息的发送者
-      "chattingroom_lastMsgFrom"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("USER","text","TEXT"))),							//来自某人的最后一条消息
-      "chattingroom_sendReport"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STEPS","math_number","NUM"),Array("LEFT","math_number","NUM"),
-						                                                Array("RIGHT","math_number","NUM"),Array("TIME","math_number","NUM"))),		//上报信息
-      "chattingroom_splitString"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("NEEDLE","text","TEXT"),Array("STRTEXT","text","TEXT"),
-						                                                Array("LIST","text","TEXT"))),							//聊天室发送消息
-      "chattingroom_menu_userlist"		=>	Array("fields"=>Array(Array("userlist","text")),"inputs"=>Array(Array("userlist","text","TEXT"))),			//聊天室用户列表
+      "chattingroom_lastMsgFrom"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("USER","text","TEXT","用户名"))),							//来自某人的最后一条消息
+      "chattingroom_sendReport"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STEPS","math_number","NUM","0"),Array("LEFT","math_number","NUM","0"),
+						                                                Array("RIGHT","math_number","NUM","0"),Array("TIME","math_number","NUM","0"))),		//上报信息
+      "chattingroom_splitString"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("NEEDLE","text","TEXT",""),Array("STRTEXT","text","TEXT",""),
+						                                                Array("LIST","text","TEXT",""))),							//聊天室发送消息
+      "chattingroom_menu_userlist"		=>	Array("fields"=>Array(Array("userlist","text")),"inputs"=>Array(Array("userlist","text","TEXT",""))),			//聊天室用户列表
       "chattingroom_unreadMsgLength"		=>	Array("fields"=>Array(),"inputs"=>Array()),										//未读消息数
    );
 
@@ -3221,6 +3228,13 @@ print_r($arrFuncData);
 
 
 
+         case "videoSensing_whenMotionGreaterThan"://	=>	Array("fields"=>Array(),"inputs"=>Array(Array("REFERENCE","math_number","NUM","10"))),	
+         case "videoSensing_videoOn"://			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBJECT","videoSensing_menu_SUBJECT","SUBJECT","this sprite"),Array("ATTRIBUTE","videoSensing_menu_ATTRIBUTE","ATTRIBUTE","motion")),	
+         case "videoSensing_videoToggle"://		=>	Array("fields"=>Array(),"inputs"=>Array(Array("VIDEO_STATE","videoSensing_menu_VIDEO_STATE","REFERENCE"))),	
+         case "videoSensing_setVideoTransparency"://	=>	Array("fields"=>Array(),"inputs"=>Array(Array("TRANSPARENCY","math_number","NUM","50")),	
+
+
+
          //自制扩展
          case "chattingroom_sendReport":		//上报信息
 
@@ -3280,8 +3294,6 @@ print_r($arrFuncData);
                $n++;
             }
             $n++;
-            print_r($arrArguments);
-echo "aaaaaaaaaaaaaaaaaaaaaaa????????? $n ???????????????????????????\n";
             /*****************************************************************************
                 数据也可能是这样的：
                     Array
@@ -3296,24 +3308,14 @@ echo "aaaaaaaaaaaaaaaaaaaaaaa????????? $n ???????????????????????????\n";
                     )
 
             *****************************************************************************/
-//echo "next $n ".$arrFuncData[$n]." nnnnnnnnnnnnnnnnnnnnnnn\n";
-
-
-     // $n= preg_match_all("/==|>|<|!=/",$strLogicExpression,$m,PREG_OFFSET_CAPTURE);			//按最基本的大于、等于、小于进行定位
-     // $nStrLength=strlen($strLogicExpression);
-
-//if(!isset($arrFuncData[$n]) && preg_match_all("/\+|\-|\*|\/|\(|\)/",$arrFuncData[$n],$m))
-//{}
-//else
-//var_dump();
-
-echo $arrFuncData[$n]."nnnnnnnnnnnnnnnnnnnn $n nnn\n";
-            if((!isset($arrFuncData[$n])  || $arrFuncData[$n]==";") && preg_match_all("/\+|\-|\*|\/|\(|\)/",$arrFuncData[$n],$m)==false && $this->getArgName($arrFuncData[0])!=NULL)			//检测后面是否还有数据，以确认当前获取的是完整数据，此操作补上了之前按括号拆分可能存在的bug。
+echo "aaaaaaaaaaaaaaaaaaaaaaa $n ???????????????????????????\n";
+            print_r($arrArguments);
+print_r($arrFuncData);
+            if((!isset($arrFuncData[$n])  || $arrFuncData[$n]==";") &&  preg_match_all("/\+|\-|\*|\/|\(|\)/",$arrFuncData[$n],$m)==false && $this->getArgName($arrFuncData[0])!=NULL)			//检测后面是否还有数据，以确认当前获取的是完整数据，此操作补上了之前按括号拆分可能存在的bug。
             {
+
+var_dump($arrFuncData[$n]);
                $arrBlockArgConfig=$this->getArgName($arrFuncData[0]);			//获取当前积木块的fields和inputs参数的配置信息
-
-
-print_r($arrBlockArgConfig);
 
                $nINPUTS=count($arrBlockArgConfig["inputs"]);				//inputs参数统计
                $nFIELDS=count($arrBlockArgConfig["fields"]);				//fields参数统计
@@ -3415,17 +3417,18 @@ echo "是变量。";
                         $strShadowUID=UID();
 
                         //生成参数积木，返回UID 
-echo "准备生成的数据1:";
-print_r($parsedArgData);
-//这里强制0了？？？？
                         $arrChildUID=$this->parseCalculationExpression($arrBlockArgConfig["inputs"][$i],$parsedArgData[$i],$thisUID); //解析的过程中，也会创建相应的积木数据，最终返回UID
-echo "返回的数据:\n";
-print_r($arrChildUID);
+
                         //只要是文本或数字的参数，都要有Shadow，这个shadow不在parseCalculationExpression里创建。
                         if($arrChildUID[1]!=NULL)
                         {
                            //VAR类型参数需要补一个shadow，BOOL类型不需要。
-                           array_push($this->Blockly,'{"S":"0","id": "'.$strShadowUID.'","opcode": "'.$arrBlockArgConfig["inputs"][$i][1].'","inputs": {},"fields": {"'.$arrBlockArgConfig["inputs"][$i][2].'": {"name": "'.$arrBlockArgConfig["inputs"][$i][2].'","value": "10"  }},"next": null,"topLevel":true,"parent":null,"shadow":true}');//"topLevel": '.($thisUID==NULL?'true':'false').',"parent":'.($thisUID==NULL?'null':'"'.$thisUID.'"').',"shadow": true}');
+
+                           array_push($this->Blockly,'{"S":"0","id": "'.$strShadowUID.'","opcode": "'.$arrBlockArgConfig["inputs"][$i][1].'","inputs": {},"fields": {"'.$arrBlockArgConfig["inputs"][$i][2].'": {"name": "'.$arrBlockArgConfig["inputs"][$i][2].'","value": "'.(isset($arrBlockArgConfig["inputs"][$i][3])?$arrBlockArgConfig["inputs"][$i][3]:0).'" '.(isset($arrBlockArgConfig["inputs"][$i][4])?',"variableType": "'.$arrBlockArgConfig["inputs"][$i][4].'"':'').' }},"next": null,"topLevel":true,"parent":null,"shadow":true}');
+
+//                           array_push($this->Blockly,'{"S":"0","id": "'.$strShadowUID.'","opcode": "'.$arrBlockArgConfig["inputs"][$i][1].'","inputs": {},"fields": {"'.$arrBlockArgConfig["inputs"][$i][2].'": {"name": "'.$arrBlockArgConfig["inputs"][$i][2].'","value": "10" }},"next": null,"topLevel":true,"parent":null,"shadow":true}');
+
+
                            //拼接主积木的参数数据
                            $strInputsData.=($i>0?',':'') . ' "'.$arrBlockArgConfig["inputs"][$i][0].'": {"TAG":"1", "name": "'.$arrBlockArgConfig["inputs"][$i][0].'", "block": "'.$arrChildUID[0].'", "shadow": "'.$strShadowUID.'"  }';
                         }
@@ -3913,9 +3916,9 @@ echo $this->arrCurrentSDFBlock;
 
             if(count($arrData)==2)				//有赋值操作
             {
-               //echo "++++++++++++++++++++++++++ $arrFuncData[0] ==========================\n";
-               //var_dump($arrData);
-               //var_dump($arrFuncData);
+               echo "++++++++++++++++++++++++++ $arrFuncData[0] ==========================\n";
+               var_dump($arrData);
+               var_dump($arrFuncData);
 
                $strCalcArg=Array(trim($arrData[0]),trim($arrData[1]));//置默认初始值为拆分后的数据
 
@@ -3932,7 +3935,7 @@ echo $this->arrCurrentSDFBlock;
                   array_pop($this->UIDS);
 									//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
                   array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。				//当前这一轮的thisUID已经被取出，但实际要到下一次调用时才使用，所以仍旧压回去。
-                  $this->parseGeneralBlocks(Array("data_changevariableby","(", trim($strCalcArg[0],'+'),",", $strCalcArg[1],")"));
+                  $this->parseGeneralBlocks(Array("data_changevariableby","(", trim($strCalcArg[0],'+'),",", $strCalcArg[1],")",";"));
                }
                else							//否则是=
                {
@@ -3941,7 +3944,7 @@ echo $this->arrCurrentSDFBlock;
 									//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
                   array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。
 
-                  $this->parseGeneralBlocks(Array("data_setvariableto","(",$strCalcArg[0],",", $strCalcArg[1],")"));//Array(opcode,arg1,arg2)
+                  $this->parseGeneralBlocks(Array("data_setvariableto","(",$strCalcArg[0],",", $strCalcArg[1],")",";"));//Array(opcode,arg1,arg2)
                }
             }
             else
@@ -5000,13 +5003,15 @@ print_r($this->arrBlockToParent);
                      $arrChildArgBlockInfo[0]=$argInfo["inputs"][0][0];			//参数积木的字段名
                      $arrChildArgBlockInfo[1]=$argInfo["inputs"][0][1];			//参数积木的opcode
                      $arrChildArgBlockInfo[2]=$argInfo["inputs"][0][2];			//参数数据类型
+                     $arrChildArgBlockInfo[3]=$argInfo["inputs"][0][3];			//参数默认值
+
                   }
                   else									//无inputs参数
                   {
                      //if($n==0)
                      //   $arrChildArgBlockInfo=Array($arrCalExpData[0][0][0],$arrCalExpData[0][0][1],$arrCalExpData[0][0][2]);
                      //else
-                        $arrChildArgBlockInfo=Array(NULL,NULL,NULL);			//无inputs，则配置数据全为NULL
+                        $arrChildArgBlockInfo=Array(NULL,NULL,NULL,NULL);			//无inputs，则配置数据全为NULL
                   }
 
                   //每个运算符/函数最多有两个参数，每个参数都需要另外生成一份积木数据，如果该参数需要默认值，则还需要生成shadow。
@@ -5198,7 +5203,7 @@ echo "继续解构。";
                         {
                            if(isset($argInfo["inputs"][0][0]))
                            {
-                              array_push($this->Blockly,'{    "d": "s108",    "id": "'.$arrArgBlockUID[0].'",    "opcode": "'.$argInfo["inputs"][0][1].'",    "inputs": {},    "fields": {        "'.$argInfo["inputs"][0][2].'": {            "name": "'.$argInfo["inputs"][0][2].'",            "value": "'.$arrArgVal[0].'"        }    },    "next": null,    "topLevel": false,    "parent": "'.$thisUID.'",    "shadow": true}');
+                              array_push($this->Blockly,'{    "d": "s108",    "id": "'.$arrArgBlockUID[0].'",    "opcode": "'.$argInfo["inputs"][0][1].'",    "inputs": {},    "fields": {"'.$argInfo["inputs"][0][2].'": {"name": "'.$argInfo["inputs"][0][2].'","value": "'.$arrArgVal[0].'"}}, "next": null,"topLevel": false,    "parent": "'.$thisUID.'",    "shadow": true}');
 
                               $strInputsData= ' "'.$argInfo["inputs"][0][0].'": {"TAG":"1", "name": "'.$argInfo["inputs"][0][0].'", "block": "'.$arrArgBlockUID[0].'", "shadow":"'.$arrArgBlockUID[0].'"  }';
                            }
@@ -5229,12 +5234,6 @@ echo "继续解构。";
       else							//如果$arrCalExpData非数组，则它就是一个普通的常量/变量
       {
          $arrCalExpData2=trim($arrCalExpData,'"');
-
-
-echo "CURRENT SELF DEFINED FUNCTION: ".$this->arrCurrentSDFBlock."\n";
-
-print_r($this->arrSelfDefinedFunctionArgs);
-print_r($arrCalExpData);
 
          if(isset($this->arrVariableUIDS[$arrCalExpData]))//in_array($arrCalExpData,$this->arrVariables))		//对变量直接引用
          {
