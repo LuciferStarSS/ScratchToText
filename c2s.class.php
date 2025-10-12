@@ -551,6 +551,7 @@ class CToScratch3
       "event_whenstageclicked"			=>0,
       "chattingroom_whenChatMessageComes"	=>0,
       "videoSensing_whenMotionGreaterThan"	=>0,
+
      // "control_wait_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
      // "control_repeat_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
      // "control_repeat"				=>0,//有包含的也不能删除next，除非后面真的没代码了。
@@ -1457,9 +1458,13 @@ class CToScratch3
 
                ****************************************************************************/
                $lastBlock=array_pop($this->Blockly);
-               if($lastBlock){
-                  $jsonBlock=json_decode($lastBlock);
 
+print_r($this->Blockly);
+               if($lastBlock){
+echo $lastBlock;
+
+                  $jsonBlock=json_decode($lastBlock);
+print_r($jsonBlock);
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
                      $jsonBlock->{'next'}=NULL;
@@ -1986,12 +1991,13 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                         $arrArg[$nArgCount][]=trim($chCH);
                   }
 
-                  if(isset($arrArg[0]))
-                     $strValue1=implode("",$arrArg[0]);
+                  if(isset($arrArg[0]))					//暂时就这么处理了。
+                     $strValue1=trim(implode("",$arrArg[0]),'"');	//忘记去掉字符串的双引号了。
                   if(isset($arrArg[1]))
-                     $strValue2=implode("",$arrArg[1]);
+                     $strValue2=trim(implode("",$arrArg[1]),'"');
                }
 
+               //print_r($arrArg);
                //echo "[".$strValue1.'|'.$strValue2."]";		//如果是videoSensing_whenMotionGreaterThan的话，$strValue1有数据
 
                $childFunc=Array();					//获取子积木数据
@@ -5294,8 +5300,8 @@ print_r($arrCalExpData);
             else
                $arrCalExpData=$arrCalExpData2;
 
-echo "dddddddd:";
-print_r($arrCalExpData);
+//echo "dddddddd:";
+//print_r($arrCalExpData);
 
             print_r($arrChildArgBlockInfo);
             //block
