@@ -44,7 +44,8 @@ class Scratch3ToC
       "event_whenbroadcastreceived"=>1,
       "control_start_as_clone"=>1,
       "event_whenstageclicked"=>1,
-      "chattingroom_whenChatMessageComes"=>1
+      "chattingroom_whenChatMessageComes"=>1,
+      "videoSensing_whenMotionGreaterThan"=>1,
    );
 
    //初始化，将传入的字符串转成JSON数据格式
@@ -1551,14 +1552,16 @@ class Scratch3ToC
          /**************************videoSensing 视频侦测**************************/
 
          case "videoSensing_whenMotionGreaterThan":				//当视频运动>10
+
+            $this->codeInC[$this->currentType][]= "//当视频运动>10\n";
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"REFERENCE"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " ){\n";
             $this->nLeftPadding++;
             break;
 
          case "videoSensing_videoOn":						//相对于角色的视频运动
-            $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
+            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."( ";
             //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"SUBJECT"});
 
             $strARGNAME="SUBJECT";
@@ -1572,7 +1575,7 @@ class Scratch3ToC
             }
 
             $this->codeInC[$this->currentType][]  = " , ";
-            $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"ATTRIBUTE"});
+            //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"ATTRIBUTE"});
 
             $strARGNAME="ATTRIBUTE";
             if( $Block->{"inputs"}->{$strARGNAME}->{"block"}==$Block->{"inputs"}->{$strARGNAME}->{"shadow"})
@@ -1584,7 +1587,7 @@ class Scratch3ToC
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
             }
 
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " )";
             break;
 
          case "videoSensing_videoToggle":					//开启摄像头
