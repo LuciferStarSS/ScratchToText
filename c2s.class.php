@@ -291,6 +291,7 @@ class CToScratch3
       'sensing_touchingobject'		=> Array('sensing_touchingobject',	1),
       'sensing_timer'			=> Array('sensing_timer',		1),
       'sensing_answer'			=> Array('sensing_answer',		1),
+      'sensing_of'			=> Array('sensing_of',			1),
       'operator_mathop'			=> Array('operator_mathop',		1),
       'looks_costumenumbername'		=> Array('looks_costumenumbername',	1),
       'looks_backdropnumbername'	=> Array('looks_backdropnumbername',	1),
@@ -1965,28 +1966,30 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                $i=4;							//若无参数，从此开始获取子积木
                $nBraceCounter=1;
 
-print_r($arrCode);
+               $arrArg=Array();
+               $nArgCount=0;
+
                if($arrCode[2]!=")")					//此处如果是“)”，就表示没有任何参数
                {
-                  $strValue1=trim($arrCode[2],'"');			//这几个HATS，第一个参数都是fields类型，不会有复杂的公式出现。追加一个videoSensing_whenMotionGreaterThan，第一个参数不是fields，情况变复杂了。
+                  $i=2;
+                  $nParenthesis=1;
 
-                  if($arrCode[3]==",")					//带参数的HATS类都有这个特征
+                  while($i<$nCodeLength)				//从第二个参数开始，所有数据保存在一起。
                   {
-                     $strValue2='';
-                     $i=4;						//第二个参数从这里开始。
+                     $chCH=$arrCode[$i++];
+                     if($chCH=='(') $nParenthesis++;				//遇到“{”就结束
+                     if($chCH==')') $nParenthesis--;				//遇到“{”就结束
+                     if($nParenthesis==0) break;
+                     if($nParenthesis==1 && $chCH==",")
+                        $nArgCount++;
+                     else
+                        $arrArg[$nArgCount][]=trim($chCH);
+                  }
 
-                     while($i<$nCodeLength)				//从第二个参数开始，所有数据保存在一起。
-                     {
-                        $chCH=$arrCode[$i++];
-                        if($chCH=='{') break;				//遇到“{”就结束
-                        $strValue2.=trim($chCH);	
-                     }
-                     $strValue2=substr($strValue2,0,-1);		//清掉一个“)”
-                  }
-                  else
-                  {
-                     $i=5;						//如果只有一个参数，那么后面子积木代码从此处开始检测
-                  }
+                  if(isset($arrArg[0]))
+                     $strValue1=implode("",$arrArg[0]);
+                  if(isset($arrArg[1]))
+                     $strValue2=implode("",$arrArg[1]);
                }
 
                //echo "[".$strValue1.'|'.$strValue2."]";		//如果是videoSensing_whenMotionGreaterThan的话，$strValue1有数据
@@ -3192,6 +3195,7 @@ print_r($arrFuncData);
          case "sensing_touchingobject":
          case "sensing_askandwait":
          case "sensing_answer":
+         case "sensing_of":
 
 
 
