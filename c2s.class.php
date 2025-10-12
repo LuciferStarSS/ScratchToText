@@ -298,6 +298,9 @@ class CToScratch3
       'motion_xposition'		=> Array('motion_xposition',		1),
       'motion_yposition'		=> Array('motion_yposition',		1),
       'motion_direction'		=> Array('motion_direction',		1),
+      'motion_direction'		=> Array('motion_direction',		1),
+      'music_getTempo'			=> Array('music_getTempo',		1),
+      'videoSensing_videoOn'		=> Array('videoSensing_videoOn',	1),
 
       'abs'				=> Array('operator_mathop',		2),	//这些函数都是由operator_mathop积木实现的。
       'ceiling'				=> Array('operator_mathop',		2),
@@ -505,11 +508,11 @@ class CToScratch3
       "music_menu_INSTRUMENT"			=>	Array("fields"=>Array(Array("INSTRUMENT","text")),"inputs"=>Array(Array("INSTRUMENT","text","TEXT"))),			//乐器菜单
 
       //视频侦测
-
-      "videoSensing_whenMotionGreaterThan"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("REFERENCE","math_number","NUM"))),	
-      "videoSensing_videoOn"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBJECT","videoSensing_menu_SUBJECT","SUBJECT","this sprite"),Array("ATTRIBUTE","videoSensing_menu_ATTRIBUTE","ATTRIBUTE","motion"))),	
-      "videoSensing_videoToggle"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("VIDEO_STATE","videoSensing_menu_VIDEO_STATE","VIDEO_STATE","on"))),	
-      "videoSensing_setVideoTransparency"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("TRANSPARENCY","math_number","NUM","50"))),	
+      "videoSensing_whenMotionGreaterThan"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("REFERENCE","math_number","NUM","10"))),					//当视频运动大于
+      "videoSensing_videoOn"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("SUBJECT","videoSensing_menu_SUBJECT","SUBJECT","this sprite"),
+                                                                                                Array("ATTRIBUTE","videoSensing_menu_ATTRIBUTE","ATTRIBUTE","motion"))),	//相对于角色的视频运动	
+      "videoSensing_videoToggle"		=>	Array("fields"=>Array(),"inputs"=>Array(Array("VIDEO_STATE","videoSensing_menu_VIDEO_STATE","VIDEO_STATE","on"))),	//开关摄像头
+      "videoSensing_setVideoTransparency"	=>	Array("fields"=>Array(),"inputs"=>Array(Array("TRANSPARENCY","math_number","NUM","50"))),				//将视频透明度设置为
 
       //互动工具
       "chattingroom_whenChatMessageComes"	=>	Array("fields"=>Array(),"inputs"=>Array()),										//当接收到聊天消息
@@ -2055,9 +2058,10 @@ print_r($arrCode);
                          $arrChildUID[0]=UID();
                          array_push($this->Blockly, '{"xx":"2","id": "'.$arrChildUID[0].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.UID().'","value": "'.$strArgument.'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": false}');
                      }
-                     else if(is_numeric($strArgument))
+                     else if(is_numeric($strArgument))			//纯数字
                      {
-                        $parsedArgData[$g]=trim($strArgument);			//纯数字参数，注意去除空格。
+                        $arrChildUID[0]=UID();
+                        $parsedArgData[$g]=$strArgument;
                      }
                      else if(!is_numeric($strArgument))					//非纯数字的参数，利用RPN算法进行分解。
                      {
@@ -3246,12 +3250,10 @@ print_r($arrFuncData);
          case "data_hidelist":
          case "data_listcontainsitem":
 
-
+         //视频侦测
          case "videoSensing_videoOn":
          case "videoSensing_videoToggle":
          case "videoSensing_setVideoTransparency":
-
-
 
          //自制扩展
          case "chattingroom_sendReport":		//上报信息
@@ -3298,7 +3300,7 @@ print_r($arrFuncData);
             $n=2;
 
 //echo "？？？？？？？？？？？？？？？";
-print_r($arrFuncData);
+//print_r($arrFuncData);
             while($n<$nFuncLength)							//获取函数的所有参数，以完整括号为拆分依据，其实存在bug，
             {										//已经在后面代码里补上了。
                if($arrFuncData[$n]=='(') $nBraceCounter++;
@@ -4937,6 +4939,7 @@ print_r($argInfo);
 
 print_r($this->arrBlockToParent);
                   $nInputsLength=count($argInfo["inputs"]);				//inputs参数个数
+                  $arrChildArgBlockInfos=Array();
                   if($nInputsLength>0)							//函数中调用函数，需要重新获取函数的配置数据
                   {
                      if($arrCalcOptInfo[1]>0)						//[0]：“+,-,*,/,%”  [1]：函数调用
@@ -5020,19 +5023,22 @@ print_r($this->arrBlockToParent);
 
                      ***************************************************************************************************/
 
-                     $arrChildArgBlockInfo[0]=$argInfo["inputs"][0][0];			//参数积木的字段名
-                     $arrChildArgBlockInfo[1]=$argInfo["inputs"][0][1];			//参数积木的opcode
-                     $arrChildArgBlockInfo[2]=$argInfo["inputs"][0][2];			//参数数据类型
-                     $arrChildArgBlockInfo[3]=$argInfo["inputs"][0][3];			//参数默认值
+                     //$arrChildArgBlockInfo[0]=$argInfo["inputs"][$i][0];			//参数积木的字段名
+                     //$arrChildArgBlockInfo[1]=$argInfo["inputs"][$i][1];			//参数积木的opcode
+                     //$arrChildArgBlockInfo[2]=$argInfo["inputs"][$i][2];			//参数数据类型
+                     //$arrChildArgBlockInfo[3]=$argInfo["inputs"][$i][3];			//参数默认值
 
-print_r($arrChildArgBlockInfo);
+                     $arrChildArgBlockInfos=$argInfo["inputs"];
+
+print_r($arrChildArgBlockInfos);
+echo "data\n";
                   }
                   else									//无inputs参数
                   {
                      //if($n==0)
                      //   $arrChildArgBlockInfo=Array($arrCalExpData[0][0][0],$arrCalExpData[0][0][1],$arrCalExpData[0][0][2]);
                      //else
-                        $arrChildArgBlockInfo=Array(NULL,NULL,NULL,NULL);			//无inputs，则配置数据全为NULL
+                        $arrChildArgBlockInfos=Array(NULL,NULL,NULL,NULL);			//无inputs，则配置数据全为NULL
                   }
 
                   //每个运算符/函数最多有两个参数，每个参数都需要另外生成一份积木数据，如果该参数需要默认值，则还需要生成shadow。
@@ -5056,13 +5062,13 @@ print_r($arrChildArgBlockInfo);
                         //else if($arrArgVal[$m]==NULL)				//参数为空，无数据。不需要shadow。这种情况一般是没有输入，也可能程序出错。
                         //{
                         //   echo "\n[INFO]: $m 无参数\n";
-                        //   //print_r($arrChildArgBlockInfo);
-                        //   //array_push($this->Blockly, '{"d":"0","id": "'.$arrChildArgBlockInfo[1].'","opcode": "'.$arrChildArgBlockInfo[0].'" ,"inputs": {},"fields": {},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": false}');
+                        //   //print_r($arrChildArgBlockInfos);
+                        //   //array_push($this->Blockly, '{"d":"0","id": "'.$arrChildArgBlockInfos[$m][1].'","opcode": "'.$arrChildArgBlockInfos[$m][0].'" ,"inputs": {},"fields": {},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": false}');
                         //   continue;
                         //}
                         else if(is_numeric($arrArgVal[$m]))			//纯数字参数，直接使用，不需要shadow。UID 为 $arrArgBlockUID[$m]， ShadowID 与 UID 一致。
                         {
-                           array_push($this->Blockly, '{"d":"1","id": "'.$arrArgBlockUID[$m].'","opcode": "'.$arrChildArgBlockInfo[1].'" ,"inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrArgVal[$m].'"}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": true}');
+                           array_push($this->Blockly, '{"d":"1","id": "'.$arrArgBlockUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'" ,"inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": "'.$arrArgVal[$m].'"}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": true}');
                            //continue;
                         }
                         else
@@ -5074,7 +5080,7 @@ print_r($arrChildArgBlockInfo);
                               //block
                               array_push($this->Blockly, '{"d":"2","id": "'.$arrArgBlockUID[$m].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.$this->arrVariableUIDS[$arrArgVal[$m]].'","value": "'.$arrArgVal[$m].'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": false}');
                               //shadow
-                              array_push($this->Blockly, '{"d":"3","id": "'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfo[1].'" ,"inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": ""}},"next": null,"topLevel": true,"parent": null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
+                              array_push($this->Blockly, '{"d":"3","id": "'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'" ,"inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": "'.$arrChildArgBlockInfos[$m][3].'"}},"next": null,"topLevel": true,"parent": null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
                               //continue;
                            }
 
@@ -5088,7 +5094,7 @@ print_r($arrChildArgBlockInfo);
                               //block对变量的直接引用
                               array_push($this->Blockly, '{"d":"4","id": "'.$arrArgBlockUID[$m].'","opcode":"argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$arrArgVal[$m].'"}},"next": null,"topLevel": false,"parent":  "'.$thisUID.'","shadow":false}');
                               //shadow
-                              array_push($this->Blockly, '{"d":"5","id": "'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfo[1].'" ,"inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": ""}},"next": null,"topLevel": true,"parent":null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
+                              array_push($this->Blockly, '{"d":"5","id": "'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'" ,"inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": ""}},"next": null,"topLevel": true,"parent":null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
                               //continue;
                            }
 
@@ -5100,7 +5106,7 @@ print_r($arrChildArgBlockInfo);
                               //指向另一个积木
                               $this->arrBlockToParent[$arrArgVal[$m]]=$thisUID;	//保存child与parent的映射关系
                               $arrArgBlockUID[$m]=$arrArgVal[$m];				//直接使用该ID
-                              array_push($this->Blockly, '{"d":"6","id": "'.$arrArgShadowUID[$m].'","opcode":"'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": ""}},"next": null,"topLevel": false,"parent":  null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
+                              array_push($this->Blockly, '{"d":"6","id": "'.$arrArgShadowUID[$m].'","opcode":"'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": ""}},"next": null,"topLevel": false,"parent":  null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
                               //}
                               //else
                               //{//算数表达，这里应该是早被拆开了，所以不会有这个else了。
@@ -5114,7 +5120,7 @@ print_r($arrChildArgBlockInfo);
                               if($arrArgVal[$m][0]!='"')		//没有被双引号括起来，就尝试按照计算表达式来处理一下
                               {
 
-echo "继续解构。";
+echo "继续解构2。";
                                  $arrLoopCondition=$this->rpn_calc->init($arrArgVal[$m]);
                                  if($arrLoopCondition===TRUE)					//拆分成功
                                  {
@@ -5128,6 +5134,7 @@ echo "继续解构。";
 
 //echo "this UID".$thisUID."\n";
 //echo "UID child:\n";
+print_r($this->Blockly);
                                     //print_r($arrChildUIDX);
                                     $arrArgBlockUID[$m]=$arrArgBlockUID[$m]=$arrChildUIDX[$m][0];
                                     $childBlockParent=$parentUID;
@@ -5137,12 +5144,13 @@ echo "继续解构。";
 
 
                                     //这个是shadow，要补上。
-                                    array_push($this->Blockly, '{"d":"x8","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"TEXT": {"name": "TEXT","id":"'.$arrChildUIDX[$m][0].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel":true,"parent":null,"shadow":true}');//"topLevel": '.($thisUID==NULL?'true':'false').',"parent":'.($thisUID==NULL?'null':'"'.$thisUID.'"').',"shadow":false}');//"parent": "'.$thisUID.'","shadow": true}');
+                                    array_push($this->Blockly, '{"d":"x8","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"TEXT": {"name": "TEXT","id":"'.$arrChildUIDX[$m][0].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel":true,"parent":null,"shadow":true}');//"topLevel": '.($thisUID==NULL?'true':'false').',"parent":'.($thisUID==NULL?'null':'"'.$thisUID.'"').',"shadow":false}');//"parent": "'.$thisUID.'","shadow": true}');
                                  }
                                  else//d:82同d:8
                                  {
                                     //join( "找到一组解：" ,"香蕉" ) 
-                                    array_push($this->Blockly, '{"d":"82'.$m.'","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel": false,"parent":"'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
+                                    //820 821
+                                    array_push($this->Blockly, '{"d":"82'.$m.'","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel": false,"parent":"'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
                                     $arrArgBlockUID[$m]=$arrArgShadowUID[$m];	//block和shadow保持一致
                                  }
                               }
@@ -5160,10 +5168,10 @@ echo "继续解构。";
                               else
                               {
                                  if($strOperator=="operator_mathop")
-                                    array_push($this->Blockly, '{"d":"7","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.trim($arrArgVal[1],'"').'"}},"next": null,"topLevel": false,"parent":"'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
+                                    array_push($this->Blockly, '{"d":"7","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": "'.trim($arrArgVal[1],'"').'"}},"next": null,"topLevel": false,"parent":"'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
                                  else
                                  {
-                                    array_push($this->Blockly, '{"d":"8'.$m.'","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel": false,"parent":"'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
+                                    array_push($this->Blockly, '{"d":"8'.$m.'","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel": false,"parent":"'.$thisUID.'","shadow": true}');//"parent": "'.$thisUID.'","shadow": true}');
                                  }
                                  $arrArgBlockUID[$m]=$arrArgShadowUID[$m];	//block和shadow保持一致
                               }
@@ -5177,7 +5185,7 @@ echo "继续解构。";
 
                   //创建算术计算积木块
                   //上面添加的都是参数的shadow，这里才是操作符积木块。
-                  if($arrChildArgBlockInfo[0]==NULL)			//被调用的函数无参数
+                  if($arrChildArgBlockInfos[0]==NULL)			//被调用的函数无参数
                   {
                      //if($n==0)					//
                      //{
@@ -5224,7 +5232,7 @@ echo "继续解构。";
                         {
                            if(isset($argInfo["inputs"][0][0]))
                            {
-                              array_push($this->Blockly,'{    "d": "s108",    "id": "'.$arrArgBlockUID[0].'",    "opcode": "'.$argInfo["inputs"][0][1].'",    "inputs": {},    "fields": {"'.$argInfo["inputs"][0][2].'": {"name": "'.$argInfo["inputs"][0][2].'","value": "'.$arrArgVal[0].'"}}, "next": null,"topLevel": false,    "parent": "'.$thisUID.'",    "shadow": true}');
+                              array_push($this->Blockly,'{"d": "s108",    "id": "'.$arrArgBlockUID[0].'",    "opcode": "'.$argInfo["inputs"][0][1].'",    "inputs": {},    "fields": {"'.$argInfo["inputs"][0][2].'": {"name": "'.$argInfo["inputs"][0][2].'","value": "'.$arrArgVal[0].'"}}, "next": null,"topLevel": false,    "parent": "'.$thisUID.'",    "shadow": true}');
 
                               $strInputsData= ' "'.$argInfo["inputs"][0][0].'": {"TAG":"1", "name": "'.$argInfo["inputs"][0][0].'", "block": "'.$arrArgBlockUID[0].'", "shadow":"'.$arrArgBlockUID[0].'"  }';
                            }
@@ -5287,7 +5295,7 @@ print_r($arrCalExpData);
 
             print_r($arrChildArgBlockInfo);
             //block
-            array_push($this->Blockly, '{"d":"18","id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrCalExpData.'"'.(isset($arrChildArgBlockInfo[3])?' , "variableType": "broadcast_msg"':'').'}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
+            array_push($this->Blockly, '{"d":"18","id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrCalExpData.'"'.(isset($arrChildArgBlockInfo[4])?' , "variableType": "broadcast_msg"':'').'}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
 
 //            array_push($this->Blockly, '{"d":"18","id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrCalExpData.'"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
 
