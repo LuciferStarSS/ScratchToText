@@ -378,24 +378,34 @@ class RPN_CALCULATION_EXPRESSION {
                   $val1=array_shift($data);				//获取数组$data的第一个数据，并删除
                   $val2=array_shift($data);				//获取数组$data的第一个数据，并删除
 
+echo "---------------------------------------\n";
+var_dump($val1);
+var_dump($val2);
+echo "---------------------------------------\n";
                   $uid=UID();
                   $jsonArr[]=Array($this->_rpnexp[$i], $uid,$val2, $val1);  //opcode,uid,arg1,arg2
 
                   switch($this->_rpnexp[$i])
                   {
                   case '+':
+print_r($jsonArr);
+                     if($val2==NULL) return false;	//双参数操作如果只有一个参数，则该表达式不正确，只能识别为文本。
                      array_unshift($data,$uid);		//将计算结果保存到数组$data的开头
                      break;
                   case '-':
+                     if($val2==NULL) return false;
                      array_unshift($data,$uid);
                      break;
                   case '*':
+                     if($val2==NULL) return false;
                      array_unshift($data,$uid);
                      break;
                   case '/':
+                     if($val2==NULL) return false;
                      array_unshift($data,$uid);
                      break;
                   case '%':
+                     if($val2==NULL) return false;
                      array_unshift($data,$uid);
                      break;
 
@@ -415,12 +425,15 @@ class RPN_CALCULATION_EXPRESSION {
       $arrResult[0]=$jsonArr;
 
       $nOffset=empty($arrResult[0])?0:1;
-      $npreAttachLength=count($this->_preAttach);				//倒序插入，这样每个被拆分的preAttach，都能准确地找到parentUID
+
+      $arrResult[$nOffset]=$this->_preAttach;
+/*
+      $npreAttachLength=count($this->_preAttach);				//不需要倒序。
       for($i=$npreAttachLength-1;$i>=0;$i--)
       {
             $arrResult[$nOffset][]=$this->_preAttach[$i];
       }
-
+*/
       /**************************************************************************************
           例：
               10 *2-3/4+5+ operator_random( 1+2*3/2-4,10 )
