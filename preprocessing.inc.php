@@ -240,6 +240,5 @@
          //echo "替换后字符串为：[".$strExpression."]\n";
          $nExpLength=strlen($strExpression);				//重新计算表达式字符串的长度。虽然长度改变了，但由于替换时从末尾倒序着进行的，所以函数所在的偏移量并没有发生改变。
       }
-
       return Array(trim($strExpression),$_arrFuncCalling);		//返回新的表达式字符串，和相关的函数调用数据
    }
