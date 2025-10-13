@@ -283,6 +283,9 @@ class CToScratch3
       'random'				=> Array('operator_random',		1),	//0为普通计算
       'round'				=> Array('operator_round',		1),	//1为函数调用并返回数值
       'operator_length'			=> Array('operator_length',		1),
+      'operator_mathop'			=> Array('operator_mathop',		1),
+      'operator_contains'		=> Array('operator_contains',		1),
+
       'sensing_distanceto'		=> Array('sensing_distanceto',		1),
       'sensing_mousedown'		=> Array('sensing_mousedown',		1),
       'sensing_keypressed'		=> Array('sensing_keypressed',		1),
@@ -291,18 +294,30 @@ class CToScratch3
       'sensing_touchingobject'		=> Array('sensing_touchingobject',	1),
       'sensing_timer'			=> Array('sensing_timer',		1),
       'sensing_answer'			=> Array('sensing_answer',		1),
+      'sensing_mousex'			=> Array('sensing_mousex',		1),
+      'sensing_mousey'			=> Array('sensing_mousey',		1),
+      'sensing_loudness'		=> Array('sensing_loudness',		1),
+      'sensing_current'			=> Array('sensing_current',		1),
       'sensing_of'			=> Array('sensing_of',			1),
-      'operator_mathop'			=> Array('operator_mathop',		1),
+      'sensing_dayssince2000'		=> Array('sensing_daysince2000',	1),
+      'sensing_username'		=> Array('sensing_username',		1),
+
       'looks_costumenumbername'		=> Array('looks_costumenumbername',	1),
       'looks_backdropnumbername'	=> Array('looks_backdropnumbername',	1),
       'looks_size'			=> Array('looks_size',			1),
+      'sound_volume'			=> Array('sound_volume',		1),
+      'data_itemoflist'		=> Array('data_itemoflist',		1),
+      'data_lengthoflist'		=> Array('data_lengthoflist',		1),
+      'data_itemnumoflist'		=> Array('data_itemnumoflist',		1),
+      'data_listcontainsitem'		=> Array('data_listcontainsitem',	1),
+
+
+
       'motion_xposition'		=> Array('motion_xposition',		1),
       'motion_yposition'		=> Array('motion_yposition',		1),
       'motion_direction'		=> Array('motion_direction',		1),
-      'motion_direction'		=> Array('motion_direction',		1),
       'music_getTempo'			=> Array('music_getTempo',		1),
       'videoSensing_videoOn'		=> Array('videoSensing_videoOn',	1),
-
       'abs'				=> Array('operator_mathop',		2),	//这些函数都是由operator_mathop积木实现的。
       'ceiling'				=> Array('operator_mathop',		2),
       'floor'				=> Array('operator_mathop',		2),
@@ -1286,7 +1301,6 @@ class CToScratch3
                      else 								//出现空行
                      {
                         $nRNCounter++;							//空行计数器增1
-
                         if( $nRNCounter>1 )						//连续出现多个空行，则代码段编号自增
                            $nSECTION++;							//后续利用这些数据的算法，用了foreach来遍历数据，所以这个段号不需要保持连续。
                      }
@@ -1459,12 +1473,8 @@ class CToScratch3
                ****************************************************************************/
                $lastBlock=array_pop($this->Blockly);
 
-print_r($this->Blockly);
                if($lastBlock){
-echo $lastBlock;
-
                   $jsonBlock=json_decode($lastBlock);
-print_r($jsonBlock);
                   if(!isset($this->isHATS[$jsonBlock->{'opcode'}]))			//非HATS类，强制修改next数据。
                   {
                      $jsonBlock->{'next'}=NULL;
@@ -1990,6 +2000,7 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                      else
                         $arrArg[$nArgCount][]=trim($chCH);
                   }
+                  $i++;
 
                   if(isset($arrArg[0]))					//暂时就这么处理了。
                      $strValue1=trim(implode("",$arrArg[0]),'"');	//忘记去掉字符串的双引号了。
@@ -3309,8 +3320,6 @@ print_r($arrFuncData);
             $nBraceCounter=0;
             $n=2;
 
-//echo "？？？？？？？？？？？？？？？";
-//print_r($arrFuncData);
             while($n<$nFuncLength)							//获取函数的所有参数，以完整括号为拆分依据，其实存在bug，
             {										//已经在后面代码里补上了。
                if($arrFuncData[$n]=='(') $nBraceCounter++;
@@ -3338,8 +3347,9 @@ print_r($arrFuncData);
                     )
 
             *****************************************************************************/
-echo "aaaaaaaaaaaaaaaaaaaaaaa $n ???????????????????????????\n";
+echo "解析后的函数参数：\n";
             print_r($arrArguments);
+//exit;
 print_r($arrFuncData);
             if((!isset($arrFuncData[$n])  || $arrFuncData[$n]==";") &&  preg_match_all("/\+|\-|\*|\/|\(|\)/",$arrFuncData[$n],$m)==false && $this->getArgName($arrFuncData[0])!=NULL)			//检测后面是否还有数据，以确认当前获取的是完整数据，此操作补上了之前按括号拆分可能存在的bug。
             {
@@ -3942,68 +3952,100 @@ echo $this->arrCurrentSDFBlock;
 
             //对变量进行赋值操作的处理
             //如果变量未定义，则在代码执行后，会自动添加该变量，且该变量的类型为适用于所有角色。
-            $arrData=explode("=",$arrFuncData[0]);
 
-            if(count($arrData)==2)				//有赋值操作
+
+
+            //i== i--
+            if(strpos($arrFuncData[0],"++") && $arrFuncData[1]==";")
             {
-               echo "++++++++++++++++++++++++++ $arrFuncData[0] ==========================\n";
-               var_dump($arrData);
-               var_dump($arrFuncData);
-
-               $strCalcArg=Array(trim($arrData[0]),trim($arrData[1]));//置默认初始值为拆分后的数据
-
-               if($nFuncLength>2)					//如果传递进来的数组大于2，则表示赋值表达式被拆分成多行了。
-               {
-                  for($r=1;$r<$nFuncLength-1;$r++)			//掐头（变量名+=）去尾(;)
-                     $strCalcArg[1].=$arrFuncData[$r];
-               }
-
-               //if($strCalcArg[0][strlen($strCalcArg[0])-1]=="+")	//判断是否是+=
-               if(isset($strCalcArg[0][-1]) && $strCalcArg[0][-1]=="+")	//PHP >=7.1
-               {
-                  array_pop($this->UIDS);
-                  array_pop($this->UIDS);
-									//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
-                  array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。				//当前这一轮的thisUID已经被取出，但实际要到下一次调用时才使用，所以仍旧压回去。
-                  $this->parseGeneralBlocks(Array("data_changevariableby","(", trim($strCalcArg[0],'+'),",", $strCalcArg[1],")",";"));
-               }
-               else							//否则是=
-               {
-                  array_pop($this->UIDS);
-                  array_pop($this->UIDS);
-									//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
-                  array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。
-
-                  $this->parseGeneralBlocks(Array("data_setvariableto","(",$strCalcArg[0],",", $strCalcArg[1],")",";"));//Array(opcode,arg1,arg2)
-               }
+               array_pop($this->UIDS);
+               array_pop($this->UIDS);
+						//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
+               array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。				//当前这一轮的thisUID已经被取出，但实际要到下一次调用时才使用，所以仍旧压回去。
+               $this->parseGeneralBlocks(Array("data_changevariableby","(", trim($arrFuncData[0],'+'),",", 1,")",";"));
+            }
+            else if(strpos($arrFuncData[0],"--") && $arrFuncData[1]==";")
+            {
+               array_pop($this->UIDS);
+               array_pop($this->UIDS);
+								//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
+               array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。				//当前这一轮的thisUID已经被取出，但实际要到下一次调用时才使用，所以仍旧压回去。
+               $this->parseGeneralBlocks(Array("data_changevariableby","(", trim($arrFuncData[0],'-'),",", -1,")",";"));
             }
             else
             {
 
-               $strData=implode($arrFuncData);
-               $this->bTOPLEVEL=true;
+               //+=   -=    =
+               $arrData=explode("=",$arrFuncData[0]);
 
-               $parsedBOOLData=$this->rpn_logic->init($strData);	//先判断是不是逻辑运算表达式
-               if(!empty($parsedBOOLData[0]))				//算法已改进，如果[0]无数据，则[1]的数据将保存到[0]中。	
-               {							//所以只要[0]为空，就表示该字符串无逻辑运算操作。
-                  $this->parseLogicExpression($parsedBOOLData,NULL);	//处理逻辑表达式
-               }
-               else if(!empty($parsedBOOLData[2]))			//处理算术表达式。充分利用逻辑表达式处理后的数据
+               if(count($arrData)==2)				//有赋值操作
                {
-                  if($parsedBOOLData[3]!=NULL)				//处理后的字符串有数据，则有两种情况
+                  echo "++++++++++++++++++++++++++ $arrFuncData[0] ==========================\n";
+                  var_dump($arrData);
+                  var_dump($arrFuncData);
+
+                  $strCalcArg=Array(trim($arrData[0]),trim($arrData[1]));//置默认初始值为拆分后的数据
+
+                  if($nFuncLength>2)					//如果传递进来的数组大于2，则表示赋值表达式被拆分成多行了。
                   {
-                     /**************************************************************
-                        适用于带函数的算术表达式
-                        例如： random(3,5)+random(3,2)
-                        解析结果为：
-                           Array
-                           (
-                               [0] => Array()				//[0]空，也就意味着[1]也空，那么当前数据就是非逻辑表达式
-                               [2] => Array				//函数调用
-                                   (
-                                       [0] => Array
-                                           (
-                                               [0] => random
+                     for($r=1;$r<$nFuncLength-1;$r++)			//掐头（变量名+=）去尾(;)
+                        $strCalcArg[1].=$arrFuncData[$r];
+                  }
+
+                  //if($strCalcArg[0][strlen($strCalcArg[0])-1]=="+")	//判断是否是+=
+                  if(isset($strCalcArg[0][-1]) && $strCalcArg[0][-1]=="+")	//需要PHP >=7.1
+                  {
+                     array_pop($this->UIDS);
+                     array_pop($this->UIDS);
+									//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
+                     array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。				//当前这一轮的thisUID已经被取出，但实际要到下一次调用时才使用，所以仍旧压回去。
+                     $this->parseGeneralBlocks(Array("data_changevariableby","(", trim($strCalcArg[0],'+'),",", $strCalcArg[1],")",";"));
+                  }
+
+                  else if(isset($strCalcArg[0][-1]) && $strCalcArg[0][-1]=="-")	//-=
+                  {
+                     array_pop($this->UIDS);
+                     array_pop($this->UIDS);
+									//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
+                     array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。				//当前这一轮的thisUID已经被取出，但实际要到下一次调用时才使用，所以仍旧压回去。
+                     $this->parseGeneralBlocks(Array("data_changevariableby","(", trim($strCalcArg[0],'-'),",", -$strCalcArg[1],")",";"));
+                  }
+                  else							//否则是=
+                  {
+                     array_pop($this->UIDS);
+                     array_pop($this->UIDS);
+									//如果要调用parseGeneralBlocks()，则需要往$this->UIDS内压入两个UID，
+                     array_push($this->UIDS,$thisUID);			//后压入的作为parentUID。
+
+                     $this->parseGeneralBlocks(Array("data_setvariableto","(",$strCalcArg[0],",", $strCalcArg[1],")",";"));//Array(opcode,arg1,arg2)
+                  }
+               }
+               else
+               {
+                  $strData=implode($arrFuncData);
+                  $this->bTOPLEVEL=true;
+
+                  $parsedBOOLData=$this->rpn_logic->init($strData);	//先判断是不是逻辑运算表达式
+                  if(!empty($parsedBOOLData[0]))				//算法已改进，如果[0]无数据，则[1]的数据将保存到[0]中。	
+                  {							//所以只要[0]为空，就表示该字符串无逻辑运算操作。
+                     $this->parseLogicExpression($parsedBOOLData,NULL);	//处理逻辑表达式
+                  }
+                  else if(!empty($parsedBOOLData[2]))			//处理算术表达式。充分利用逻辑表达式处理后的数据
+                  {
+                     if($parsedBOOLData[3]!=NULL)				//处理后的字符串有数据，则有两种情况
+                     {
+                        /**************************************************************
+                              适用于带函数的算术表达式
+                              例如： random(3,5)+random(3,2)
+                              解析结果为：
+                                 Array
+                                 (
+                                     [0] => Array()				//[0]空，也就意味着[1]也空，那么当前数据就是非逻辑表达式
+                                     [2] => Array				//函数调用
+                                         (
+                                                [0] => Array
+                                                    (
+                                                        [0] => random
                                                [1] => ID_N;]FqfUHrlBJNYItC4Kb_DI
                                                [2] => 3,2
                                            )
@@ -4017,23 +4059,23 @@ echo $this->arrCurrentSDFBlock;
                                [3] => ID_:Qh$nMyX[z;v#:.f7t;v_DI + ID_N;]FqfUHrlBJNYItC4Kb_DI	//表达式经预处理后最终的形式
                            )
 
-                     **************************************************************/
-                     $arrLoopCondition=$this->rpn_calc->init($parsedBOOLData[3]);
+                        **************************************************************/
+                        $arrLoopCondition=$this->rpn_calc->init($parsedBOOLData[3]);
 
-                     if($arrLoopCondition===TRUE)			//一种是[3]字符串可以继续拆分		//拆分成功
-                     {
-                        $arrLoopCondition=$this->rpn_calc->toScratchJSON();
-                        $arrLoopCondition[1]=$parsedBOOLData[2];	//前面已经处理过函数调用了，所以这里不会再有函数调用的数据，需要补上。
-                        $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrLoopCondition,NULL);
-                     }
-                     else						//一种是[3]不可再拆分
-                     {
-                        /*****************************************************************************************
-                           适用于单独函数嵌套调用的算术表达式。
+                        if($arrLoopCondition===TRUE)			//一种是[3]字符串可以继续拆分		//拆分成功
+                        {
+                           $arrLoopCondition=$this->rpn_calc->toScratchJSON();
+                           $arrLoopCondition[1]=$parsedBOOLData[2];	//前面已经处理过函数调用了，所以这里不会再有函数调用的数据，需要补上。
+                           $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrLoopCondition,NULL);
+                        }
+                        else						//一种是[3]不可再拆分
+                        {
+                              /*****************************************************************************************
+                                 适用于单独函数嵌套调用的算术表达式。
 
-                           例如：random(random(3,4),5)
+                                 例如：random(random(3,4),5)
 
-                           解析结果为：
+                              解析结果为：
                               Array
                               (
                                   [0] => Array()
@@ -4057,24 +4099,24 @@ echo $this->arrCurrentSDFBlock;
                               )
 
                         *****************************************************************************************/
-                        if(strlen($parsedBOOLData[3])==26)		//不可再拆分的话，这个[3]应该只剩下一个IDDI了。
-                        {						//最好用preg_match，但，就简单一点吧，其实可以不判断了。
-                           $arrCalcResult=Array(Array(),Array(),Array());
-                           $arrCalcResult[1]=$parsedBOOLData[2];		//parseCalculationExpression只处理[0]和[1]里的数据。
-                           $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrCalcResult,NULL);
+                           if(strlen($parsedBOOLData[3])==26)		//不可再拆分的话，这个[3]应该只剩下一个IDDI了。
+                           { 						//最好用preg_match，但，就简单一点吧，其实可以不判断了。
+                              $arrCalcResult=Array(Array(),Array(),Array());
+                              $arrCalcResult[1]=$parsedBOOLData[2];		//parseCalculationExpression只处理[0]和[1]里的数据。
+                              $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrCalcResult,NULL);
+                           }
                         }
                      }
+                     else							//只剩下函数调用了。
+                     {
+                        $arrCalcResult=Array(Array(),Array(),Array());
+                        $arrCalcResult[1]=$parsedBOOLData[2];		//parseCalculationExpression只处理[0]和[1]里的数据。
+                        $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrCalcResult,NULL);
+                     }
                   }
-                  else							//只剩下函数调用了。
+                  else if($parsedBOOLData[3]!=NULL)
                   {
-                     $arrCalcResult=Array(Array(),Array(),Array());
-                     $arrCalcResult[1]=$parsedBOOLData[2];		//parseCalculationExpression只处理[0]和[1]里的数据。
-                     $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrCalcResult,NULL);
-                  }
-               }
-               else if($parsedBOOLData[3]!=NULL)
-               {
-                  /*****************************************************************************************
+                     /*****************************************************************************************
                       适用于无函数调用且无小括号的算术表达式。
 
                           例如：1+2*3/5
@@ -4087,29 +4129,28 @@ echo $this->arrCurrentSDFBlock;
                                   [3] => 1+2*3/5
                               )
 
-                  *****************************************************************************************/
+                     *****************************************************************************************/
 
-                  $arrLoopCondition=$this->rpn_calc->init($parsedBOOLData[3]);
+                     $arrLoopCondition=$this->rpn_calc->init($parsedBOOLData[3]);
 
-                  if($arrLoopCondition===TRUE)					//拆分成功
-                  {
-                     $arrLoopCondition=$this->rpn_calc->toScratchJSON();
-
-                     $arrLoopCondition[1]=$parsedBOOLData[2];	//parseCalculationExpression只处理[0]和[1]里的数据。
-                     $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrLoopCondition,NULL);//$arrLoopCondition,NULL);
-                  }
-                  else
-                  {
-                     if(strlen($parsedBOOLData[3])==26)	//表达式只剩下一个IDDI了。
+                     if($arrLoopCondition===TRUE)					//拆分成功
                      {
-                        $arrCalcResult=Array(Array(),Array(),Array());
-                        $arrCalcResult[1]=$parsedBOOLData[2];		//parseCalculationExpression只处理[0]和[1]里的数据。
-                        $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrCalcResult,NULL);//$arrLoopCondition,NULL);
+                        $arrLoopCondition=$this->rpn_calc->toScratchJSON();
+
+                        $arrLoopCondition[1]=$parsedBOOLData[2];	//parseCalculationExpression只处理[0]和[1]里的数据。
+                        $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrLoopCondition,NULL);//$arrLoopCondition,NULL);
+                     }
+                     else
+                     {
+                        if(strlen($parsedBOOLData[3])==26)	//表达式只剩下一个IDDI了。
+                        {
+                              $arrCalcResult=Array(Array(),Array(),Array());
+                              $arrCalcResult[1]=$parsedBOOLData[2];		//parseCalculationExpression只处理[0]和[1]里的数据。
+                              $arrChildUIDX=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrCalcResult,NULL);//$arrLoopCondition,NULL);
+                        }
                      }
                   }
                }
-
-
 
 
 /*
@@ -4385,7 +4426,7 @@ echo $this->arrCurrentSDFBlock;
          {
             $nLEDLength=count($arrLogicExpData[$n]);
             for($i=$nLEDLength-1;$i>=0;$i--)				//正序遍历每一组数据
-//            for($i=0;$i<$nLEDLength;$i++)				//正序遍历每一组数据
+            //for($i=0;$i<$nLEDLength;$i++)				//正序遍历每一组数据
             {
                //$arrCurrentLogicBlock=$arrLogicExpData[$n][$i];		//当前运算操作符数据：  Array([0]=>逻辑运算符,[1]=>UID,[2]=>第一个参数,[3]=>第二个参数);
                $strOperator=$arrLogicExpData[$n][$i][0];
@@ -4845,7 +4886,8 @@ print_r($arrCalExpData[$n]);
                   $thisUID=$arrCalExpData[$n][$i][1];				//当前积木的UID将是添加的每个inputs类变量积木的parent
 
                   $arrArgVal=Array(						//积木的两个可能存在的参数
-                                trim($arrCalExpData[$n][$i][2],'"'),		//去掉可能存在的双引号
+                                $arrCalExpData[$n][$i][2],		//去掉可能存在的双引号
+//                                trim($arrCalExpData[$n][$i][2],'"'),		//去掉可能存在的双引号
                                 isset($arrCalExpData[$n][$i][3])?trim($arrCalExpData[$n][$i][3],'"'):NULL	//“不成立”这个积木，只有一个参数。
                   );
 
@@ -4946,7 +4988,7 @@ echo "9999999999999999999999999999999\n";
 
 print_r($arrCalcOptInfo);
 print_r($argInfo);
-
+print_r($arrArgVal);
 print_r($this->arrBlockToParent);
                   $nInputsLength=count($argInfo["inputs"]);				//inputs参数个数
                   $arrChildArgBlockInfos=Array();
@@ -5001,16 +5043,28 @@ print_r($this->arrBlockToParent);
                                 )
 
                         ***************************************************************************************************/
-                        for($l=0;$l<$nCCBVariableLength;$l++)						//拆分参数
+                        $nQuotationFound=0;
+                        for($l=0;$l<$nCCBVariableLength;$l++)					//拆分参数
                         {
                            $chCH=$arrArgVal[0][$l];
-                           if($chCH==',') {$nVCounter++;$l++;}				//以“,”拆分	//
-                           $arrInputVal[$nVCounter].=$arrArgVal[0][$l];
+                           //echo $chCH."\t".$nQuotationFound."\t".$nVCounter."\n";
+                           if($chCH=='"') $nQuotationFound++;
+                           if($chCH==',' && $nQuotationFound%2==0) {$nVCounter++;}		//虽然是以“,”拆分，但还要检测是否在""里。
+                           else $arrInputVal[$nVCounter].=$chCH;//$arrArgVal[0][$l];
                         }
-
+//echo "按,拆分参数";
+//print_r($arrInputVal);
+//print_r($arrArgVal);
+                        /*   //在这里，还不急着把双引号去掉，因为还要判断是否是字符串。
                         $arrArgVal[0]=trim(trim($arrInputVal[0]),'"');			//将拆分好的参数再覆盖回去。
                         if($nVCounter>0)						//$nVCounter：0|1
                            $arrArgVal[1]=trim(trim($arrInputVal[1]),'"');		//第二个参数如果有，要加上。
+                        */
+
+                        $arrArgVal[0]=trim($arrInputVal[0]);			//将拆分好的参数再覆盖回去。
+                        if($nVCounter>0)						//$nVCounter：0|1
+                           $arrArgVal[1]=trim($arrInputVal[1]);		//第二个参数如果有，要加上。
+
                      }
 
                      /***************************************************************************************************
@@ -5126,10 +5180,11 @@ echo "data\n";
 
                            else//啥也不是时，可能是文本字符串。
                            {
+echo "可能是文本参数x：\n";
+print_r($arrArgVal);
                               //if(strpos($arrArgVal[$m],'"')===FALSE)		//没有被双引号括起来，就尝试按照计算表达式来处理一下
                               if($arrArgVal[$m][0]!='"')		//没有被双引号括起来，就尝试按照计算表达式来处理一下
                               {
-
 echo "继续解构2。";
                                  $arrLoopCondition=$this->rpn_calc->init($arrArgVal[$m]);
                                  if($arrLoopCondition===TRUE)					//拆分成功
@@ -5151,7 +5206,8 @@ print_r($this->Blockly);
 
 //这里应该要保存一份对应关系的。
                                     $this->arrBlockToParent[$arrChildUIDX[$m][0]]=$thisUID;
-
+echo "拆分成功：\n";
+print_r($arrArgVal);
 
                                     //这个是shadow，要补上。
                                     array_push($this->Blockly, '{"d":"x8","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"TEXT": {"name": "TEXT","id":"'.$arrChildUIDX[$m][0].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel":true,"parent":null,"shadow":true}');//"topLevel": '.($thisUID==NULL?'true':'false').',"parent":'.($thisUID==NULL?'null':'"'.$thisUID.'"').',"shadow":false}');//"parent": "'.$thisUID.'","shadow": true}');
@@ -5300,8 +5356,8 @@ print_r($arrCalExpData);
             else
                $arrCalExpData=$arrCalExpData2;
 
-//echo "dddddddd:";
-//print_r($arrCalExpData);
+echo "dddddddd:";
+print_r($arrCalExpData);
 
             print_r($arrChildArgBlockInfo);
             //block
