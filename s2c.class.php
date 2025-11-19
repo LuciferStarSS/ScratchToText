@@ -120,6 +120,40 @@ class Scratch3ToC
 
       if($Block==NULL) return -1;							//ID所对应的数据不存在
 
+print_r($Block);
+
+      /**************************************************************
+         遇到一例，无ID。
+         从.SB3文件中读取project.json，其中数据不含ID。ID只在KEY中出现，且inputs和fields中的参数，没有key。
+         stdClass Object
+         (
+             [opcode] => event_whenbroadcastreceived
+             [next] => !_bqSF^@R.UJV09/IS8A
+             [parent] => 
+             [inputs] => stdClass Object
+                 (
+                 )
+
+             [fields] => stdClass Object
+                 (
+                     [BROADCAST_OPTION] => Array
+                         (
+                             [0] => nextlevel
+                             [1] => broadcastMsgId-nextlevel
+                         )
+
+                 )
+
+             [shadow] => 
+             [topLevel] => 1
+             [x] => 26
+             [y] => 330
+         )
+
+         得做一个专门的版本了。
+
+      **************************************************************/
+
       if(isset($this->arrBlockID[$Block->{"id"}]))
          unset($this->arrBlockID[$Block->{"id"}]);				//对于存在的积木，需从清单中清除，并执行后续的转换操作；
       else return -1;								//对于不存在的积木，则直接返回。
@@ -1878,7 +1912,7 @@ class Scratch3ToC
                $this->codeInC[$this->currentType][]="MSG ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
             }
             else if($arr->{"type"}=="list")									//列表的定义
-                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",trim($arr->{"value"},'"'))."' ":"")."};\n";
+                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",$arr->{"value"})."' ":"")."};\n";
             else												//普通变量的定义
                 $this->codeInC[$this->currentType][]="VAR ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
          }
@@ -1896,7 +1930,7 @@ class Scratch3ToC
                $this->codeInC[$this->currentType][]="MSG ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
             }
             else if($arr->{"type"}=="list")									//列表的定义
-                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",trim($arr->{"value"},'"'))."' ":"")."};\n";
+                $this->codeInC[$this->currentType][]="LIST ".$arr->{"name"}." =  {".(count($arr->{"value"})>0?" '".implode("','",$arr->{"value"})."' ":"")."};\n";
             else												//普通变量的定义
                 $this->codeInC[$this->currentType][]="VAR ".$arr->{"name"}." = ".(is_numeric($arr->{"value"})?$arr->{"value"}:("\"".trim($arr->{"value"},'"')."\"")).";\n";
          }
@@ -1950,11 +1984,22 @@ class Scratch3ToC
    //输出转换结果
    function dumpCodeInC()
    {
-      var_dump($this->codeInC);
+      //var_dump($this->codeInC);
       if($this->codeInC!=NULL)
       {
          echo json_encode( Array(implode("",$this->codeInC[0]),implode("",$this->codeInC[1]),implode("",$this->codeInC[2]),preg_replace("/\n\n+/","\n\n",trim(implode("",$this->codeInC[3]),"\n"))."\n"));
       }
    }
+
+   //输出转换结果
+   function getCodeInC()
+   {
+      //var_dump($this->codeInC);
+      if($this->codeInC!=NULL)
+      {
+         return $this->codeInC[2];// preg_replace("/\n\n+/","\n\n",trim(implode("",$this->codeInC[3]),"\n"));//return Array(implode("",$this->codeInC[0]),implode("",$this->codeInC[1]),implode("",$this->codeInC[2]),preg_replace("/\n\n+/","\n\n",trim(implode("",$this->codeInC[3]),"\n"))."\n");
+      }
+   }
+
 }
 ?>
