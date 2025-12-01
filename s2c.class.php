@@ -195,12 +195,12 @@ print_r($Block);
 
          case "argument_reporter_string_number":				//自制积木参数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= ($bArg==true?"VAR ":"").$Block->{"fields"}->{"VALUE"}->{"value"};	//"VAR ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的字符串和数字类型参数。替换空格
+               $this->codeInC[$this->currentType][]= ($bArg==true?"VAR ":"").str_replace(' ','',$Block->{"fields"}->{"VALUE"}->{"value"});	//"VAR ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的字符串和数字类型参数。替换空格
             break;
 
          case "argument_reporter_boolean":					//自制积木参数
             if($Block->{"parent"}!=NULL)
-               $this->codeInC[$this->currentType][]= ($bArg==true?"BOOL ":"").$Block->{"fields"}->{"VALUE"}->{"value"};	//"BOOL ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的布尔值类型参数。文本标签不算参数。
+               $this->codeInC[$this->currentType][]= ($bArg==true?"BOOL ":"").str_replace(' ','',$Block->{"fields"}->{"VALUE"}->{"value"});	//"BOOL ".$Block->{"fields"}->{"VALUE"}->{"value"};	//自制积木的布尔值类型参数。文本标签不算参数。
             break;
 
 
