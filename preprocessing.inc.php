@@ -129,7 +129,7 @@
          //侦测
          'sensing_touchingobject','sensing_touchingcolor','sensing_coloristouchingcolor','sensing_distanceto','sensing_answer','sensing_keypressed','sensing_mousedown','sensing_mousex','sensing_mousey','sensing_loudness','sensing_timer','sensing_current','sensing_of','sensing_dayssince2000','sensing_username',
          //运算符
-         'operator_random','operator_contains','operator_join','operator_length','operator_mathop',"round","random","join",
+         'operator_random','operator_contains','operator_join','operator_length','operator_mathop','operator_letter_of',"round","random","join",
          //变量
          'data_itemoflist','data_itemnumoflist','data_lengthoflist','data_listcontainsitem',
          //音乐
