@@ -285,6 +285,7 @@ class CToScratch3
       'operator_length'			=> Array('operator_length',		1),
       'operator_mathop'			=> Array('operator_mathop',		1),
       'operator_contains'		=> Array('operator_contains',		1),
+      'operator_letter_of'		=> Array('operator_letter_of',		1),
 
       'sensing_distanceto'		=> Array('sensing_distanceto',		1),
       'sensing_mousedown'		=> Array('sensing_mousedown',		1),
@@ -467,16 +468,17 @@ class CToScratch3
 
       //运算
       "operator_mod"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM","1"),Array("NUM2","math_number","NUM","1"))),		//运算的，全在代码里实现。
-      "operator_add"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
-      "operator_subtract"			=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
-      "operator_divide"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
-      "operator_multiply"			=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM"),Array("NUM2","math_number","NUM"))),		//运算的，全在代码里实现。
+      "operator_add"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM","1"),Array("NUM2","math_number","NUM","1"))),		//运算的，全在代码里实现。
+      "operator_subtract"			=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM","1"),Array("NUM2","math_number","NUM","1"))),		//运算的，全在代码里实现。
+      "operator_divide"				=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM","1"),Array("NUM2","math_number","NUM","1"))),		//运算的，全在代码里实现。
+      "operator_multiply"			=>      Array("fields"=>Array(),"inputs"=>Array(Array("NUM1","math_number","NUM","1"),Array("NUM2","math_number","NUM","1"))),		//运算的，全在代码里实现。
       "operator_random"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("FROM","math_number","NUM","1"),Array("TO","math_number","NUM","10"))),		//随机数
       "operator_contains"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING1","text","TEXT","苹果"),Array("STRING2","text","TEXT","这里有一只苹果"))),		//包含
       "operator_join"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING1","text","TEXT","苹果"),Array("STRING2","text","TEXT","香蕉"))),		//连接
-      "operator_round"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("NUM","math_number","NUM",""))),						//四舍五入
+      "operator_round"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("NUM","math_number","NUM","1.5"))),						//四舍五入
       "operator_length"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING","text","TEXT","苹果"))),						//字符串长度
-      "operator_mathop"				=>	Array("fields"=>Array(Array("OPERATOR")),"inputs"=>Array(Array("NUM","math_number","NUM",""))),				//数学函数运算
+      "operator_mathop"				=>	Array("fields"=>Array(Array("OPERATOR")),"inputs"=>Array(Array("NUM","math_number","NUM","1"))),				//数学函数运算
+      "operator_letter_of"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STRING","text","TEXT","苹果"),Array("LETTER","math_whole_number","NUM","1"))),						//字符串长度
 
       //变量
       "data_setvariableto"			=>	Array("fields"=>Array(Array("VARIABLE","")),"inputs"=>Array(Array("VALUE","text","TEXT","0"))),				//将变量设为
@@ -2743,7 +2745,7 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                preg_match_all("/int ([^^]*?)=([^^]*?);([^^]*?)<([^^]*?);/",$strLoopCondition,$m);
                if(count($m)==5)
                {
-                  if(!is_numeric($m[4][0]))// && $m[4][0]!="")		//如果i<后面非数字，则应该对其进行算术表达式的解析
+                  if(!is_numeric($m[4][0]))   // && $m[4][0]!="")		//如果i<后面非数字，则应该对其进行算术表达式的解析
                   {
                      $strLoop=$m[4][0]."-".$m[2][0];			//C/C++中，i的初始值可以为任何数，但在Scratch中，这个i的初始值为多少并没有意义，只需要知道循环执行多少次，
                      if($m[2][0]=='0')   $strLoop=$m[4][0];		//所以只需要计算i最大值与i初始值之间的差值即可。
@@ -2753,7 +2755,10 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                      {
                         $arrLoopCondition=$this->rpn_calc->init($strLoop);
 
-                        if($arrLoopCondition===TRUE)					//拆分成功
+//这里有个问题，如果$strLoop是一个函数调用，那么就应该返回一个UID，则也应该判定为是算数表达式，而适用TRUE条件。
+//已改正。
+                        //if($arrLoopCondition===TRUE)					//拆分成功
+                        if($arrLoopCondition!==FALSE)					//拆分成功
                         {
                            $arrLoopCondition=$this->rpn_calc->toScratchJSON();
                            echo "条件结果：";
@@ -2762,7 +2767,7 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                         }
                         else								//拆分失败
                         {
-                           if(isset($this->arrVariableUIDS[trim($arrLoopCondition)]))//in_array(trim($arrLoopCondition),$this->arrVariables) )	//参数是已定义的变量，生成该变量的积木块，此处不需要shadow，shadow由repeat自己生成。
+                           if(isset($this->arrVariableUIDS[trim($arrLoopCondition)]))   //in_array(trim($arrLoopCondition),$this->arrVariables) )	//参数是已定义的变量，生成该变量的积木块，此处不需要shadow，shadow由repeat自己生成。
                            {
                               $arrChildUIDX[0]=UID();
                               array_push($this->Blockly, '{"x":"2","id": "'.$arrChildUIDX[0].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.UID().'","value": "'.trim($arrLoopCondition).'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$thisUID.'","shadow": false}');
@@ -3229,6 +3234,7 @@ print_r($arrFuncData);
          case "operator_multiply":
          case "operator_length":
          case "operator_mathop":
+         case "operator_letter_of":
 
          //自制积木
 
@@ -5170,7 +5176,7 @@ echo "data\n";
                               //指向另一个积木
                               $this->arrBlockToParent[$arrArgVal[$m]]=$thisUID;	//保存child与parent的映射关系
                               $arrArgBlockUID[$m]=$arrArgVal[$m];				//直接使用该ID
-                              array_push($this->Blockly, '{"d":"6","id": "'.$arrArgShadowUID[$m].'","opcode":"'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": ""}},"next": null,"topLevel": false,"parent":  null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
+                              array_push($this->Blockly, '{"d":"6","id": "'.$arrArgShadowUID[$m].'","opcode":"'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfos[$m][2].'": {"name": "'.$arrChildArgBlockInfos[$m][2].'","value": "'.$arrChildArgBlockInfos[$m][3].'"}},"next": null,"topLevel": false,"parent":  null,"shadow": true}');//"parent":  "'.$thisUID.'","shadow": true}');
                               //}
                               //else
                               //{//算数表达，这里应该是早被拆开了，所以不会有这个else了。
