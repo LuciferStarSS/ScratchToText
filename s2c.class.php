@@ -1,6 +1,21 @@
 <?php
 //set_time_limit(3);
-/*
+
+/**********************************************************************
+
+   一个重要更新：
+       自制积木有在运行时是否刷新的设置，
+       在代码中，以最后一个参数是否为true做标记。
+
+       如果最后一个参数为true，表示运行时不刷新；
+       否则默认为刷新。
+
+
+    添加对注释的支持
+
+**********************************************************************/
+
+/**********************************************************************
 
 TODO:
 造型编号需要调整。
@@ -21,13 +36,14 @@ TODO:
    $scratch->dumpCodeInC();			//输出结果
    file_put_contents("sc.txt",serialize($scratch->codeInC));	//数组结果写入文件
 
-*/
+**********************************************************************/
 
 
 class Scratch3ToC
 {
    private $Blocks;						//原始的Scratch3.0项目脚本的JSON数据，保存了所有积木块的信息
    private $Variables;						//存放所有变量
+   private $Comments;						//存放所有注释
    private $codeInC=Array(Array(),Array(),Array(),Array());	//转换后的伪代码，数据按先后顺序，以字符的方式存放于数组中。四个位置分别为：0全局变量，1当前角色变量，2带HATS的代码，3游离的代码。
    private $arrBlockID=NULL;					//积木ID清单：Array( "BLOCKID1"=>0);
    private $nLeftPadding=0;					//代码对齐补空格
@@ -49,10 +65,16 @@ class Scratch3ToC
    );
 
    //初始化，将传入的字符串转成JSON数据格式
-   function __construct($Blocks,$Variables)
+   function __construct($Blocks,$Variables,$Comments)
    {
       $this->Blocks  = json_decode( $Blocks );					//保存所有积木
       $this->Variables  = json_decode( $Variables );				//保存所有变量
+      $jsonComments = json_decode( $Comments );
+
+      foreach($jsonComments as $key=>$value)
+      {
+         $this->Comments[$value->{"blockId"}]=$value->{"text"};
+      }
       //var_dump($this->Blocks);
    }
 
@@ -62,6 +84,15 @@ class Scratch3ToC
       return isset($this->hats[$opcode]);					//更新：将in_array改成了isset
    }
 
+   //获取积木的注释数据
+   function getComments($BlockID)
+   {
+echo $BlockID;
+var_dump($this->Comments);
+
+//var_dump($this->Comments->{$BlockID});
+      return isset($this->Comments[$BlockID])? "/** ".$this->Comments[$BlockID]."**/":"";
+   }
    //填充缩进的空格字符
    function padding()
    {
@@ -217,19 +248,19 @@ print_r($Block);
 
          case "event_whenflagclicked":
             $this->codeInC[$this->currentType][]= "//当绿旗被点击\n";
-            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."(){\n";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."(){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
          case "event_whenkeypressed":
             $this->codeInC[$this->currentType][]= "//当某键被按下\n".$Block->{"opcode"}."(\"";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"KEY_OPTION"}->{"value"};
-            $this->codeInC[$this->currentType][]= "\"){\n";
+            $this->codeInC[$this->currentType][]= "\"){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
          case "event_whenthisspriteclicked":
-            $this->codeInC[$this->currentType][]= "//当角色被点击\n".$Block->{"opcode"}."(){\n";
+            $this->codeInC[$this->currentType][]= "//当角色被点击\n".$Block->{"opcode"}."(){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
@@ -240,7 +271,7 @@ print_r($Block);
             else
                $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"KEY_OPTION"}->{"value"};
 
-            $this->codeInC[$this->currentType][]= "\"){\n";
+            $this->codeInC[$this->currentType][]= "\"){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
@@ -249,7 +280,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"WHENGREATERTHANMENU"}->{"value"};
             $this->codeInC[$this->currentType][]="\" , ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"VALUE"});
-            $this->codeInC[$this->currentType][]= "){\n";
+            $this->codeInC[$this->currentType][]= "){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
@@ -260,17 +291,17 @@ print_r($Block);
                $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"BACKDROP"}->{"value"};
             else
                $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"KEY_OPTION"}->{"value"};
-            $this->codeInC[$this->currentType][]= "\"){\n";
+            $this->codeInC[$this->currentType][]= "\"){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
          case "control_start_as_clone":					//这个是控制里的，但它也属于HAT类型
-            $this->codeInC[$this->currentType][]= "//当作为克隆体启动时\n".$Block->{"opcode"}."(){\n";
+            $this->codeInC[$this->currentType][]= "//当作为克隆体启动时\n".$Block->{"opcode"}."(){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
          case "chattingroom_whenChatMessageComes":			//这个是自制扩展，被定义为了HAT类型
-            $this->codeInC[$this->currentType][]= "//当接收到广播\n".$Block->{"opcode"}."(){\n";
+            $this->codeInC[$this->currentType][]= "//当接收到广播\n".$Block->{"opcode"}."(){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             break;
 
@@ -298,7 +329,7 @@ print_r($Block);
             }
 
 
-            $this->codeInC[$this->currentType][] = " );\n";
+            $this->codeInC[$this->currentType][] = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "event_broadcastandwait":						//广播并等待
@@ -315,7 +346,7 @@ print_r($Block);
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
             }
 
-            $this->codeInC[$this->currentType][] = " );\n";
+            $this->codeInC[$this->currentType][] = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "event_broadcast_menu":						//广播菜单
@@ -329,19 +360,19 @@ print_r($Block);
          case "motion_movesteps":						//移动n步
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"STEPS"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_direction":						//变量：方向
-            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()";
+            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "motion_xposition":						//变量：X坐标
-            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()";
+            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "motion_yposition":						//变量：Y坐标
-            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()";
+            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "motion_turnright":						//右转n度
@@ -353,7 +384,7 @@ print_r($Block);
          case "motion_turnleft":						//左转n度
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"DEGREES"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_gotoxy":							//移到xy
@@ -361,7 +392,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"X"});
             $this->codeInC[$this->currentType][]= " , ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"Y"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_goto":							//移到预设目标位置
@@ -377,7 +408,7 @@ print_r($Block);
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
             }
 
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_goto_menu":						//移到预设目标位置的选项菜单
@@ -386,7 +417,7 @@ print_r($Block);
          case "motion_pointindirection":					//移到“随机位置/鼠标指针”
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"DIRECTION"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_pointtowards":						//面向n度方向/面向角色
@@ -402,7 +433,7 @@ print_r($Block);
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
             }
 
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_pointtowards_menu":					//面向角色方向选项
@@ -411,31 +442,31 @@ print_r($Block);
          case "motion_changexby":						//将x坐标增加
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"DX"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_changeyby":						//将y坐标增加
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"DY"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_setx":							//将x坐标设为
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"X"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_sety":							//将y坐标设为
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"Y"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_setrotationstyle":					//将旋转方式设为“左右翻转/不可旋转/任意旋转”
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( \"";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"STYLE"}->{"value"};
-            $this->codeInC[$this->currentType][]= "\" );\n";
+            $this->codeInC[$this->currentType][]= "\" );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_glidesecstoxy":						//n秒内滑行到xy
@@ -445,7 +476,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"X"});
             $this->codeInC[$this->currentType][]= " , ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"Y"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_glideto":							//n秒内滑行到目标
@@ -465,7 +496,7 @@ print_r($Block);
             }
 
 
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "motion_glideto_menu":						//n秒内滑行到目标菜单选项
@@ -473,7 +504,7 @@ print_r($Block);
             break;
 
          case "motion_ifonedgebounce":						//碰到边缘就反弹
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();\n";
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();".$this->getComments($Block->{"id"})."\n";
             break;
 
          /**************************MOTION 运动**************************/
@@ -486,13 +517,13 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"MESSAGE"});
             $this->codeInC[$this->currentType][]= " ,";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"SECS"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_say":							//说
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"MESSAGE"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_thinkforsecs":						//想n秒
@@ -500,13 +531,13 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"MESSAGE"});
             $this->codeInC[$this->currentType][]= " ,";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"SECS"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_think":							//想
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"MESSAGE"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_switchcostumeto":						//换成造型
@@ -522,7 +553,7 @@ print_r($Block);
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
             }
 
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_costume":							//switchcostumeto的默认shadow值，直接在switchcostumeto里处理了，不需要单独处理。
@@ -533,14 +564,14 @@ print_r($Block);
          case "looks_costumenumbername":					//当前角色编号/名称的类型
             $this->codeInC[$this->currentType][]= $Block->{"opcode"}.'( "';
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUMBER_NAME"}->{"value"};
-            $this->codeInC[$this->currentType][]= '" )';
+            $this->codeInC[$this->currentType][]= '" )'.$this->getComments($Block->{"id"});
 
             break;
 
          case "looks_backdropnumbername":					//当前角色编号/名称的类型
             $this->codeInC[$this->currentType][]= $Block->{"opcode"}.'( "';
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"NUMBER_NAME"}->{"value"};
-            $this->codeInC[$this->currentType][]= '" )';
+            $this->codeInC[$this->currentType][]= '" )'.$this->getComments($Block->{"id"});
             break;
 
          case "looks_switchbackdropto":						//换成背景
@@ -562,19 +593,19 @@ print_r($Block);
             //   $this->codeInC[$this->currentType][]= "\"".$Block2->{"fields"}->{"BACKDROP"}->{"value"}."\"";
             //else
             //   $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"BACKDROP"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_changesizeby":						//将大小增加
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"CHANGE"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_setsizeto":						//将大小设为
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"SIZE"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_changeeffectby":						//将特效增加
@@ -582,7 +613,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= "\"".$Block->{"fields"}->{"EFFECT"}->{"value"}."\"";
             $this->codeInC[$this->currentType][]= " , ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"CHANGE"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_seteffectto":						//将特效设为
@@ -591,17 +622,17 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= "\"".$Block->{"fields"}->{"EFFECT"}->{"value"}."\"";
             $this->codeInC[$this->currentType][]= " , ";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"VALUE"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_size":							//大小
-            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."()";
+            $this->codeInC[$this->currentType][]= $Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "looks_gotofrontback":						//置于顶端
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= "\"".$Block->{"fields"}->{"FRONT_BACK"}->{"value"}."\"";
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_goforwardbackwardlayers":					//上移/下移n层
@@ -609,7 +640,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= "\"".$Block->{"fields"}->{"FORWARD_BACKWARD"}->{"value"}."\"";
             $this->codeInC[$this->currentType][]= ",";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"NUM"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "looks_show":							//显示
@@ -617,7 +648,7 @@ print_r($Block);
          case "looks_cleargraphiceffects":					//清除图像特效
          case "looks_nextcostume":						//下一个造型
          case "looks_nextbackdrop":						//下一个背景
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();\n";
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();".$this->getComments($Block->{"id"})."\n";
             break;
 
          /**************************LOOKS 外观**************************/
@@ -639,7 +670,7 @@ print_r($Block);
             }
 
             //$this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"SOUND_MENU"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "sound_changeeffectby":						//将音效增加
@@ -648,18 +679,18 @@ print_r($Block);
             $this->codeInC[$this->currentType][]  = $Block->{"fields"}->{"EFFECT"}->{"value"};
             $this->codeInC[$this->currentType][]  = "\" ,";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"VALUE"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "sound_changevolumeby":						//将音量增加
          case "sound_setvolumeto":						//将音量设为%
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"VOLUME"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "sound_volume":							//播放声音等待播完
-            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."()";
+            $this->codeInC[$this->currentType][]  = $Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "sound_sounds_menu":						//播放声音等待播完
@@ -668,7 +699,7 @@ print_r($Block);
 
          case "sound_stopallsounds":						//停止所有声音
          case "sound_cleareffects":						//清除音效
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();\n";
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();".$this->getComments($Block->{"id"})."\n";
             break;
 
          /**************************SOUND 声音**************************/
@@ -680,14 +711,14 @@ print_r($Block);
          case "control_wait":							//等待n秒
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."(";
             $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"DURATION"});
-            $this->codeInC[$this->currentType][]= ");\n";
+            $this->codeInC[$this->currentType][]= ");".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "control_repeat":							//重复执行n次
             $this->nLoopCounter++;
             $this->codeInC[$this->currentType][]= $this->padding()."for(int i".$this->nLoopCounter." = 0; i".$this->nLoopCounter." < ";
             $this->convertCode( $Block->{"inputs"}->{"TIMES"});
-            $this->codeInC[$this->currentType][]= "; i".$this->nLoopCounter."++ ){\n";
+            $this->codeInC[$this->currentType][]= "; i".$this->nLoopCounter."++ ){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             if(isset($Block->{"inputs"}->{"SUBSTACK"}) && $Block->{"inputs"}->{"SUBSTACK"}->{"block"}!=NULL)	//检测包含的子积木块
             {
@@ -701,7 +732,7 @@ print_r($Block);
             break;
 
          case "control_forever":						//重复执行
-            $this->codeInC[$this->currentType][]= $this->padding()."do{\n";
+            $this->codeInC[$this->currentType][]= $this->padding()."do{".$this->getComments($Block->{"id"})."\n";
 
             $this->nLeftPadding++;
             if(isset($Block->{"inputs"}->{"SUBSTACK"}) && $Block->{"inputs"}->{"SUBSTACK"}->{"block"}!=NULL)	//检测包含的子积木块
@@ -718,7 +749,7 @@ print_r($Block);
             break;
 
          case "control_repeat_until":						//重复执行直到
-            $this->codeInC[$this->currentType][]= $this->padding()."do{\n";
+            $this->codeInC[$this->currentType][]= $this->padding()."do{".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             if(isset($Block->{"inputs"}->{"SUBSTACK"}) && $Block->{"inputs"}->{"SUBSTACK"}->{"block"}!=NULL)	//检测包含的子积木块
             {
@@ -747,7 +778,7 @@ print_r($Block);
             {
                $this->convertCode( $Block->{"inputs"}->{"CONDITION"});
             }
-            $this->codeInC[$this->currentType][]= " ){\n";
+            $this->codeInC[$this->currentType][]= " ){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             if(isset($Block->{"inputs"}->{"SUBSTACK"}) && $Block->{"inputs"}->{"SUBSTACK"}->{"block"}!=NULL)	//检测包含的子积木块
             {
@@ -756,7 +787,7 @@ print_r($Block);
             else
             {
                 $this->nLeftPadding--;
-                $this->codeInC[$this->currentType][]=$this->padding()."}\n";
+                $this->codeInC[$this->currentType][]=$this->padding()."}".$this->getComments($Block->{"id"})."\n";
             }
             break;
 
@@ -767,7 +798,7 @@ print_r($Block);
                //var_dump($Block->{"inputs"}->{"CONDITION"});
                $this->convertCode( $Block->{"inputs"}->{"CONDITION"});
             }
-            $this->codeInC[$this->currentType][]= " ){\n";
+            $this->codeInC[$this->currentType][]= " ){".$this->getComments($Block->{"id"})."\n";
             $this->nLeftPadding++;
             if(isset($Block->{"inputs"}->{"SUBSTACK"}) && $Block->{"inputs"}->{"SUBSTACK"}->{"block"}!=NULL)	//检测包含的子积木块
             {
@@ -776,7 +807,7 @@ print_r($Block);
             else
             {
                 $this->nLeftPadding--;
-                $this->codeInC[$this->currentType][]=$this->padding()."}\n";
+                $this->codeInC[$this->currentType][]=$this->padding()."}".$this->getComments($Block->{"id"})."\n";
             }
             $this->codeInC[$this->currentType][]= $this->padding()."else{\n";
             $this->nLeftPadding++;
@@ -792,20 +823,20 @@ print_r($Block);
             break;
 
          case "control_wait_until":						//等待直到
-            $this->codeInC[$this->currentType][]= $this->padding()."do{}\n";
+            $this->codeInC[$this->currentType][]= $this->padding()."do{}".$this->getComments($Block->{"id"})."\n";
             $this->codeInC[$this->currentType][]= $this->padding()."while (!";
 
             if(isset($Block->{"inputs"}->{"CONDITION"}) && $Block->{"inputs"}->{"CONDITION"}->{"block"}!=NULL)	//检测包含的子积木块
             {
                $this->convertCode( $Block->{"inputs"}->{"CONDITION"});
             }
-            $this->codeInC[$this->currentType][]= ");\n";
+            $this->codeInC[$this->currentType][]= ");".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "control_stop":							//停止
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( \"";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"STOP_OPTION"}->{"value"};
-            $this->codeInC[$this->currentType][]= "\" );\n";
+            $this->codeInC[$this->currentType][]= "\" );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "control_create_clone_of":					//克隆
@@ -822,7 +853,7 @@ print_r($Block);
             }
 
             //$this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{"CLONE_OPTION"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "control_create_clone_of_menu":					//克隆的菜单项
@@ -830,7 +861,7 @@ print_r($Block);
             break;
 
          case "control_delete_this_clone":					//删除此克隆体
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();\n";
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();".$this->getComments($Block->{"id"})."\n";
             break;
 
          /**************************CONTROL 控制*************************/
@@ -925,7 +956,7 @@ print_r($Block);
          case "sensing_askandwait":						//询问并等待
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"QUESTION"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "sensing_timer":							//定时器
@@ -997,7 +1028,7 @@ print_r($Block);
             break;
 
          case "sensing_resettimer":						//计时器归零
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();\n";
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "colour_picker":							//选取颜色
@@ -1247,21 +1278,21 @@ print_r($Block);
             $this->codeInC[$this->currentType][]= $this->padding().''.$Block->{"fields"}->{"VARIABLE"}->{"value"};
             $this->codeInC[$this->currentType][]="=";			//暂时不支持加空格。
             $this->convertCode($Block->{"inputs"}->{"VALUE"});
-            $this->codeInC[$this->currentType][]= " ;\n";
+            $this->codeInC[$this->currentType][]= " ;".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_changevariableby":						//将变量增加
             $this->codeInC[$this->currentType][]= $this->padding()."".$Block->{"fields"}->{"VARIABLE"}->{"value"};
             $this->codeInC[$this->currentType][]="+=";			//暂时不支持加空格。
             $this->convertCode($Block->{"inputs"}->{"VALUE"});
-            $this->codeInC[$this->currentType][]= " ;\n";
+            $this->codeInC[$this->currentType][]= " ;".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_showvariable":						//显示变量
          case "data_hidevariable":						//隐藏变量
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"VARIABLE"}->{"value"};
-            $this->codeInC[$this->currentType][]= " );";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          /**************************列表**************************/
@@ -1274,26 +1305,26 @@ print_r($Block);
          case "data_hidelist":							//隐藏列表
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]= $Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_addtolist":							//列表中增加值
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
             $this->codeInC[$this->currentType][]=" ,";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_deleteoflist":						//删除列表内某个数据
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
             $this->codeInC[$this->currentType][]=" , ";
             $this->convertCode($Block->{"inputs"}->{"INDEX"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_deletealloflist":						//清空列表数据
             $this->codeInC[$this->currentType][]= $this->padding().$Block->{"opcode"}."( ".$Block->{"fields"}->{"LIST"}->{"value"};
-            $this->codeInC[$this->currentType][]=" );\n";
+            $this->codeInC[$this->currentType][]=" );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_insertatlist":						//往列表某项前中插入数据
@@ -1302,7 +1333,7 @@ print_r($Block);
             $this->convertCode($Block->{"inputs"}->{"INDEX"});
             $this->codeInC[$this->currentType][]=" ,";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_replaceitemoflist":						//替换列表中某项数据
@@ -1311,7 +1342,7 @@ print_r($Block);
             $this->convertCode($Block->{"inputs"}->{"INDEX"});
             $this->codeInC[$this->currentType][]=" ,";
             $this->convertCode($Block->{"inputs"}->{"ITEM"});
-            $this->codeInC[$this->currentType][]= " );\n";
+            $this->codeInC[$this->currentType][]= " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "data_itemoflist":						//取列表中某项的值
@@ -1383,7 +1414,7 @@ print_r($Block);
             if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
                $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
 
-            $this->codeInC[$this->currentType][]= ");\n";
+            $this->codeInC[$this->currentType][]= ");".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "procedures_definition":						//自制积木定义
@@ -1458,7 +1489,7 @@ print_r($Block);
          case "pen_setPenColorToColor":						//将笔的颜色设为
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"COLOR"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "pen_changePenColorParamBy":       				//将笔的参数增加
@@ -1478,14 +1509,14 @@ print_r($Block);
             //$this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"COLOR_PARAM"});
             $this->codeInC[$this->currentType][] = " ,";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"VALUE"});
-            $this->codeInC[$this->currentType][] = " );\n";
+            $this->codeInC[$this->currentType][] = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "pen_changePenSizeBy":             				//将笔的粗细增加
          case "pen_setPenSizeTo":               				//将笔的粗细设为
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"SIZE"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "pen_menu_colorParam":             				//将笔的粗细设为
@@ -1496,7 +1527,7 @@ print_r($Block);
          case "pen_penDown":							//落笔
          case "pen_penUp":							//抬笔
          case "pen_clear":							//全部擦除
-            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();\n";
+            $this->codeInC[$this->currentType][] = $this->padding().$Block->{"opcode"}."();".$this->getComments($Block->{"id"})."\n";
             break;
 
          /**************************PEN 画笔**************************/
@@ -1520,13 +1551,13 @@ print_r($Block);
 
             $this->codeInC[$this->currentType][]  = " , ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"BEATS"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "music_restForBeats":						//休止n拍
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"BEATS"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "music_playNoteForBeats":						//演奏音符n拍
@@ -1534,7 +1565,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"NOTE"});
             $this->codeInC[$this->currentType][]  = " , ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"BEATS"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "music_setInstrument":						//将乐器设为
@@ -1551,19 +1582,19 @@ print_r($Block);
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
             }
 
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "music_setTempo":							//将演奏速度设定为
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"TEMPO"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "music_changeTempo":						//将演奏速度增加
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"TEMPO"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "music_getTempo":							//演奏速度
@@ -1639,13 +1670,13 @@ print_r($Block);
                $this->codeInC[$this->currentType][]= $this->convertCode($Block->{"inputs"}->{$strARGNAME}->{"block"});  //shadow指向了block，就是block；否则就是shadow。
             }
 
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
          case "videoSensing_setVideoTransparency":				//将视频透明度设为
             $this->codeInC[$this->currentType][]  = $this->padding().$Block->{"opcode"}."( ";
             $this->codeInC[$this->currentType][]  = $this->convertCode($Block->{"inputs"}->{"TRANSPARENCY"});
-            $this->codeInC[$this->currentType][]  = " );\n";
+            $this->codeInC[$this->currentType][]  = " );".$this->getComments($Block->{"id"})."\n";
             break;
 
 
@@ -1664,7 +1695,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"USER"});
             $this->codeInC[$this->currentType][] = " ,";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"MSG"});
-            $this->codeInC[$this->currentType][] = " );\n";
+            $this->codeInC[$this->currentType][] = " );".$this->getComments($Block->{"id"})."\n";
          break;
 
          case "chattingroom_sendReport":					//聊天室发送消息
@@ -1676,7 +1707,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"RIGHT"});
             $this->codeInC[$this->currentType][] = " , ";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"TIME"});
-            $this->codeInC[$this->currentType][] = " );\n";
+            $this->codeInC[$this->currentType][] = " );".$this->getComments($Block->{"id"})."\n";
          break;
 
          case "chattingroom_splitString":					//聊天室发送消息
@@ -1686,7 +1717,7 @@ print_r($Block);
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"STRTEXT"});
             $this->codeInC[$this->currentType][] = " , ";
             $this->codeInC[$this->currentType][] = $this->convertCode($Block->{"inputs"}->{"LIST"});
-            $this->codeInC[$this->currentType][] = " );\n";
+            $this->codeInC[$this->currentType][] = " );".$this->getComments($Block->{"id"})."\n";
          break;
 
          case "chattingroom_menu_userlist":					//聊天室用户列表
