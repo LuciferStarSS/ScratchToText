@@ -3048,10 +3048,10 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
                *******************************************************************/
             }
          }
-         $boolWarp=false;
-         if( strpos($strArgumentDefinition,"true,")!=-1 )			//如果这样设置，则：1.false可以省去；2.true为保留字，不允许作为普通变量的值进行传递。实际Scratch3.0也不允许在调用时直接用true作为参数。
+         $boolWarp=true;
+         if( strpos($strArgumentDefinition,"true,")===false )			//如果这样设置，则：1.false可以省去；2.true为保留字，不允许作为普通变量的值进行传递。实际Scratch3.0也不允许在调用时直接用true作为参数。
          {
-            $boolWarp=true;//运行时不刷新
+            $boolWarp=false;//运行时不刷新
          }
 
          $strFunctionName_format=trim(str_replace($arrArgName,$arrArgType,$strFunctionName));				//通过批量替换，生成自制积木的proccode
@@ -5410,3 +5410,4 @@ print_r($arrCalExpData);
    }
 }
 ?>
+
