@@ -1,32 +1,17 @@
 <?php
-set_time_limit(2);
-error_reporting(E_ALL);
-   $d=isset($_POST["D"])?$_POST["D"]:"";
-   $v=isset($_POST["V"])?$_POST["V"]:"";
-   //if($d)
-   //{
-   //   file_put_contents("in_raw2c_d.txt",$d);
-   //   file_put_contents("in_raw2c_v.txt",$v);
-   //}
-   //else
-   //{
-   //   $d=file_get_contents("in_raw2c_d.txt");
-   //   $v=file_get_contents("in_raw2c_v.txt");
-   //}
+   set_time_limit(2);
+   error_reporting(E_ALL);
 
-//print_r(json_decode($d));
-//print_r(json_decode($v));
+   $d=isset($_POST["D"])?$_POST["D"]:"";	//ç§¯æœ¨
+   $v=isset($_POST["V"])?$_POST["V"]:"";	//å˜é‡
+   $c=isset($_POST["C"])?$_POST["C"]:"";	//æ³¨é‡Š
 
-//exit;
-//echo $d."\r\n\r\n";
-//echo $v;
-      include "s2c.class.php";
-      $scratch= new Scratch3ToC($d,$v);
-      $scratch->compileSB3();
-      $scratch->dumpCodeInC();
+   include "s2c.class.php";
+   $scratch= new Scratch3ToC($d,$v,$c);
+   $scratch->compileSB3();
+   $scratch->dumpCodeInC();
 
-      //$j=json_decode( $d );					//µ÷ÊÔÓÃ
-      //file_put_contents("in_json2c.txt",print_r($j,true));	//µ÷ÊÔÓÃ
-
+   //$j=json_decode( $d );					//è°ƒè¯•ç”¨
+   //file_put_contents("in_json2c.txt",print_r($j,true));	//è°ƒè¯•ç”¨
 
 ?>
