@@ -1360,7 +1360,7 @@ print_r($Block);
          //   $this->codeInC[$this->currentType][]= "){\n";	//差别在这里：这个是函数定义。（现在看看，已经不明白当时要表达什么了。）
             break;
 
-         case "procedures_call":						//自制积木的调用
+         case "procedures_call":						//对自制积木的调用
 
             $strFormat=$Block->{"mutation"}->{"proccode"};
 
@@ -1398,6 +1398,7 @@ print_r($Block);
                return $prefix . $item . $suffix;
             }, $arguments);
 
+            $strWarp=$Block->{"mutation"}->{"warp"};				//true为运行时不刷新，false为运行时刷新
 										//自制积木名字的处理
             $strFormat=$Block->{"mutation"}->{"proccode"};
             $strFormat=str_replace("%b","%s",$strFormat);
@@ -1439,11 +1440,11 @@ print_r($Block);
                   }
 
                }
-                  if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
-                     $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
+               //if( $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]==" , " )
+               //   $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
             }
 
-            $this->codeInC[$this->currentType][]= "){\n";
+            $this->codeInC[$this->currentType][]= "$strWarp ){\n";			//运行时刷不刷新，控制在这里。
 
             $this->nLeftPadding++;	//控制括号。这个结构类似于HATS
 
