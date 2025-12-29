@@ -87,11 +87,10 @@ class Scratch3ToC
    //获取积木的注释数据
    function getComments($BlockID)
    {
-echo $BlockID;
-var_dump($this->Comments);
+      echo "GETCOMMENTS:".$BlockID."\n";
+      var_dump($this->Comments[$BlockID]);
 
-//var_dump($this->Comments->{$BlockID});
-      return isset($this->Comments[$BlockID])? "/** ".$this->Comments[$BlockID]."**/":"";
+      return isset($this->Comments[$BlockID])? "/* ".$this->Comments[$BlockID]." */":"";
    }
    //填充缩进的空格字符
    function padding()
@@ -364,15 +363,15 @@ print_r($Block);
             break;
 
          case "motion_direction":						//变量：方向
-            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
+            $this->codeInC[$this->currentType][]  =" ".$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "motion_xposition":						//变量：X坐标
-            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
+            $this->codeInC[$this->currentType][]  =" ".$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "motion_yposition":						//变量：Y坐标
-            $this->codeInC[$this->currentType][]  =$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
+            $this->codeInC[$this->currentType][]  =" ".$Block->{"opcode"}."()".$this->getComments($Block->{"id"});
             break;
 
          case "motion_turnright":						//右转n度
@@ -1934,7 +1933,7 @@ print_r($Block);
    function compileSB3()
    {
       $this->currentType=0;
-      $this->codeInC[$this->currentType][] = "//适用于所有角色的变量\n";
+      $this->codeInC[$this->currentType][] = "//此处定义适用于所有角色的变量\n";
       if( isset($this->Variables->{"GV"}) && count((array)$this->Variables->{"GV"})>0)
       {
          foreach($this->Variables->{"GV"} as $VID=>$arr)
@@ -1951,7 +1950,7 @@ print_r($Block);
       }
 
       $this->currentType=1;
-      $this->codeInC[$this->currentType][] = "//仅适用于当前角色的变量\n";
+      $this->codeInC[$this->currentType][] = "//此处定义仅适用于当前角色的变量\n//如当前角色为舞台，\n//请在上方窗口中定义。\n";
       if( isset($this->Variables->{"CV"}) && count((array)$this->Variables->{"CV"})>0)
       {
 
@@ -1969,7 +1968,7 @@ print_r($Block);
       }
 
       $this->currentType=2;
-      $this->codeInC[$this->currentType][]= "//以下为已关联事件的积木\n";
+      $this->codeInC[$this->currentType][]= "//在此处开始编写您的代码\n\n";
 
       $arrSDFBlockID=$this->getSDFBlocks();			//自制积木
 
@@ -1991,24 +1990,22 @@ print_r($Block);
 
       $arrHatBlockID=$this->getHatBlocks();			//头部积木
       if(count($arrHatBlockID)>0)
-      {
-         //$this->codeInC[$this->currentType][]= "//以下为已关联事件的积木\n";
-         for($i=0;$i<count($arrHatBlockID);$i++)
+      {         
+         //$this->codeInC[$this->currentType][]= "//以下为已关联事件的积木\n\n";
+         foreach($arrHatBlockID as $block)
          {
-            $this->convertFromHat($arrHatBlockID[$i]);
+            $this->convertFromHat($block);
          }
       }
 
       $this->currentType=3;
-      $this->codeInC[$this->currentType][]= "//以下为未关联事件的游离积木\n";
       $arrRestBlockID=$this->getRestParentBlocks();		//剩余零散积木
-
       if(count($arrRestBlockID)>0)
       {
-         for($i=0;$i<count($arrRestBlockID);$i++)
+         $this->codeInC[$this->currentType][]= "//零散代码收容所\n\n";
+         foreach($arrRestBlockID as $block)
          {
-            //var_dump($arrRestBlockID[$i]);
-            $this->convertFromRest($arrRestBlockID[$i]);
+            $this->convertFromRest($block);
          }
       }
    }
