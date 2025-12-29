@@ -2,6 +2,70 @@
 //set_time_limit(3);
 /**********************************************************************
 
+   关于自制积木的刷新问题：
+       自制积木有在运行时是否刷新的设置，
+       在代码中，以最后一个参数是否为true做标记。
+
+       如果最后一个参数为true，表示运行时不刷新；
+       否则默认为刷新。
+
+**********************************************************************/
+
+/**********************************************************************
+
+   关于注释的处理问题：
+
+       注释的匹配和替换
+           注释有两种，一种是单行注释，一种是多行注释。
+
+           如果注释中有如下情况：
+               //测试
+               //测试二
+           如果替换用正则，则第二个注释会因为包含了第一个注释的数据被错误地替换掉一部分数据。
+           因此，只能通过字串的方式进行替换。
+
+           另外，还会有一种特殊情况：
+               \/* 
+                  多行注释里有单行注释数据
+                  注释数据
+                  //这里的单行注释，被多行注释给注释了。
+               *\/
+           此时，明显多行注释应该优先于单行注释，
+           那么，将这两种注释的匹配放在同一时间内处理，可能会出现错误。
+           因此，两种注释要分开处理，且先处理多行注释。
+           但这样一来，又会出现注释顺序穿插的问题：
+               //注释1
+               \/*注释2*\/
+               //注释3
+           因此需要记录每个注释所在的偏移量，最终根据偏移量来重新排序。
+           
+
+       注释的创建
+          oVMM.props.vm.runtime.targets[1].createComment(
+             当前注释的UID,
+             所指向的积木的UID（可为null）,
+             "注释的文本数据",
+             x坐标,
+             y坐标,
+             宽,
+             高,
+             是否展开true|false
+          );
+
+       注释可以单独存在，也可以指向某一个已经存在的积木。
+       当注释指向某一个积木时，
+           createComment的第二个参数即为被指向的积木的UID，
+           在createComment时，还会将注释的UID赋值给该积木的comment字段。
+
+       x坐标、y坐标、宽和高不能使用缺省值
+       x坐标和y坐标，可以在前端生成时通过获取对应的积木数据里的x和y来生成
+       所以本程序只要返回两个UID和注释的文本数据即可。
+
+**********************************************************************/
+
+
+/**********************************************************************
+
    CToScratch3负责：
 
         1. 解析POST过来的类C文本代码，按段落进行拆分。
@@ -11,8 +75,8 @@
         2. 依次对每个段落中的代码进行解析，并生成对应的积木数据（JSON格式的文本）；
         3. 将生成的数据返回给前端，由前端对积木数据进行添加操作。
 
-   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   一个标准的积木块，它是由一系列的参数来控制的，在Scratch3.0内核中，这些数据以JSON数据格式储存。
+    ----------------------------------------------------------------------------------------------------------------------------------
+    一个标准的积木块，它是由一系列的参数来控制的，在Scratch3.0内核中，这些数据以JSON数据格式储存。
 
         例一：
         外观分类中的积木“下一个造型”，转换成类C语言后为“looks_nextcostume();”，其积木的JSON数据如下：
@@ -53,7 +117,7 @@
                 "x": 330.5185185185184,
                 "y": 229.92592592592592
             },
-            "d@{vmU.U6kdiOP:xtR~z": {				//参数积木块数据
+            "d@{vmU.U6kdiOP:xtR~z": {				//积木块参数数据
                 "id": "d@{vmU.U6kdiOP:xtR~z",
                 "opcode": "math_number",			//opcode类型表明此参数类型为数字
                 "inputs": {},					//参数都是固定值，因此无inputs
@@ -90,7 +154,7 @@
                  "topLevel": true,
                  "shadow": false
              },
-            "ID_sf7{V_$[_Hs]`S5XNd:l_DI": {			//实际参数积木块数据
+            "ID_sf7{V_$[_Hs]`S5XNd:l_DI": {			//积木块参数为变量
                 "id": "ID_sf7{V_$[_Hs]`S5XNd:l_DI",      
                 "opcode": "data_variable",
                 "inputs": {},
@@ -107,14 +171,14 @@
                 "topLevel": false,				//topLeve	true和false并无影响，建议为false
                 "shadow": false					//shadow	必须为false，否则虽然有效，但不显示变量，只显示shadow值。
             },
-            "ID_$bogJI9gZtoGK2S#@s@I_DI": {			//默认值积木块数据
+            "ID_$bogJI9gZtoGK2S#@s@I_DI": {			//积木块默认值数据
                  "id": "ID_$bogJI9gZtoGK2S#@s@I_DI",
                  "opcode": "math_number",
                  "inputs": {},
                  "fields": {
                      "NUM": {
                          "name": "NUM",
-                         "value": "10"				//默认值为10
+                         "value": "10"				//积木块参数默认值
                      }
                  },
                  "next": null,
@@ -124,11 +188,11 @@
              },
          }
 
-   本程序就是基于上述的分析，设计算法，实现积木与类C语言之间的转换操作的。
-   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    本程序就是基于上述的分析，设计算法，实现积木与类C语言之间的转换操作的。
+    ----------------------------------------------------------------------------------------------------------------------------------
 
 
-   主要需要解决：
+    主要需要解决：
 
         0. 文本数据的拆分
             
@@ -229,7 +293,7 @@
 
 *************************************************************************************************************************/
 
-define("DEBUGs", false);
+define("DEBUGs", true);
 
 
 /*************************************************************************************************************************
@@ -246,10 +310,8 @@ define("DEBUGs", false);
 
 *************************************************************************************************************************/
 include_once "./preprocessing.inc.php";
-
 include_once "./rpn_calc_expression.class.php";				//处理四则混合运算的逆波兰类定义
 include_once "./rpn_logic_expression.class.php";			//处理逻辑运算的逆波兰类定义
-
 
 /*************************************************************************************************************************
 *
@@ -272,7 +334,11 @@ class CToScratch3
 
    private  $arrCurrentSDFBlock 	= "";				//当前自制积木的名字，用于访问指定自制积木的变量信息。
 
-   private  $arrCalcFunctionToActuralOpcode=Array(					//算术运算符拆分后的数据中，操作符与积木opcode的映射关系
+   private  $arrComments                = Array();			//用于存放解析后的注释数据。 Array( COMMENT_UID => Array(COMMENT_UID,BLOCK_UID,TEXT) );
+   private  $arrCommentsOffset           = Array();			//单行和多行注释被分开匹配和处理，导致注释在arrComments中的数据的顺序出现穿插，所以需要记录每个注释的起点位置。 Array( COMMENT_UID => PREG_OFFSET_CAPTURE );
+   private  $arrCommentsToBlock         = Array();			//保存已经被指定了COMMENT的blockid.Array( BLOCK_UID => COMMENT_UID );
+
+   private  $arrCalcFunctionToActuralOpcode=Array(			//部分积木具有返回值，可以作为参数被调用。算术运算符拆分后的数据中，操作符与积木opcode的映射关系
       '+'				=> Array('operator_add',		0),     //"运算符"=>Array(函数对应的积木的opcode,类型);
       '-'				=> Array('operator_subtract',		0),
       '*'				=> Array('operator_multiply',		0),
@@ -307,18 +373,17 @@ class CToScratch3
       'looks_backdropnumbername'	=> Array('looks_backdropnumbername',	1),
       'looks_size'			=> Array('looks_size',			1),
       'sound_volume'			=> Array('sound_volume',		1),
-      'data_itemoflist'		=> Array('data_itemoflist',		1),
+      'data_itemoflist'			=> Array('data_itemoflist',		1),
       'data_lengthoflist'		=> Array('data_lengthoflist',		1),
       'data_itemnumoflist'		=> Array('data_itemnumoflist',		1),
       'data_listcontainsitem'		=> Array('data_listcontainsitem',	1),
-
-
 
       'motion_xposition'		=> Array('motion_xposition',		1),
       'motion_yposition'		=> Array('motion_yposition',		1),
       'motion_direction'		=> Array('motion_direction',		1),
       'music_getTempo'			=> Array('music_getTempo',		1),
       'videoSensing_videoOn'		=> Array('videoSensing_videoOn',	1),
+
       'abs'				=> Array('operator_mathop',		2),	//这些函数都是由operator_mathop积木实现的。
       'ceiling'				=> Array('operator_mathop',		2),
       'floor'				=> Array('operator_mathop',		2),
@@ -352,7 +417,7 @@ class CToScratch3
           )
 
    *************************************************************************************************************************/
-   private  $arrArgumentConfig  = Array(
+   private  $arrArgumentConfig  = Array(//按Scratch3.0界面上显示顺序排列
 
       //运动
       "motion_movesteps"			=>	Array("fields"=>Array(),"inputs"=>Array(Array("STEPS","math_number","NUM","10"))),						//移动10步
@@ -371,7 +436,6 @@ class CToScratch3
       "motion_sety"				=>	Array("fields"=>Array(),"inputs"=>Array(Array("Y","math_number","NUM","0"))),						//Y坐标设为
       "motion_ifonedgebounce"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//遇到边缘就反弹
       "motion_setrotationstyle" 		=>	Array("fields"=>Array(Array("STYLE")),"inputs"=>Array()),								//设置旋转方式
-
       "motion_xposition"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//x坐标
       "motion_yposition"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//y坐标	
       "motion_direction"			=>	Array("fields"=>Array(),"inputs"=>Array()),										//方向	
@@ -568,10 +632,6 @@ class CToScratch3
       "event_whenstageclicked"			=>0,
       "chattingroom_whenChatMessageComes"	=>0,
       "videoSensing_whenMotionGreaterThan"	=>0,
-
-     // "control_wait_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
-     // "control_repeat_until"			=>0,//有包含的也不能删除next，除非后面真的没代码了。
-     // "control_repeat"				=>0,//有包含的也不能删除next，除非后面真的没代码了。
    );
 
    /*************************************************************************************************************************
@@ -841,14 +901,76 @@ class CToScratch3
                $nSECTION		= 0;				//代码段号
                $nRNCounter		= 0;				//空行回车计数器
 
+
+               /****************************************************************************
+
+                  注释的生成
+
+                      利用当前数据处理方式，将注释数据替换成伪函数调用。
+
+                      1.处理： \/* *\/
+                      2.处理： //
+
+                      两者要分步骤进行，是因为有可能会存在这种情况：
+                      \/*
+                         这里是注释
+
+                         //这里也是注释
+                      *\/
+                      如果两种处理合并到一起，则实际为一处注释，会被解析为两处。
+
+
+
+                   例如：
+                      motion_movesteps( 10 );//XXXXXXXXXXXXXX
+                      motion_movesteps( 10 );
+                      //YYYYYYYYYYYYYY
+                      if(1>2){//ZZZZZZZZZZZZ
+                         motion_movesteps( 10 );//abcdefg
+                         motion_movesteps( 10 );
+                      }
+
+                      转换成
+                      motion_movesteps( 10 );COMMENT(XXXXXXXXXXXXXX);
+                      motion_movesteps( 10 );
+                      COMMENT(YYYYYYYYYYYYYY);
+                      if(1>2){COMMENT(ZZZZZZZZZZZZ);
+                         motion_movesteps( 10 );COMMENT(abcdefg);
+                         motion_movesteps( 10 );
+                      }
+
+               *****************************************************************************/
+
+               preg_match_all("/\/\*.*?\*\//s",$this->arrCODEDATA[3],$m,PREG_OFFSET_CAPTURE);					//匹配查找注释类型：/*  */
+               $n=count($m[0]);
+               for($j=$n-1;$j>=0;$j--)								//为了让正则匹配的偏移量一直有效，所以要从后面开始替换。因此arrComments里是倒序的。
+               {
+                  $strCommentUID=UID();															//生成注释的UID
+                  $this->arrComments[$strCommentUID]=Array($strCommentUID,NULL,trim(trim(trim($m[0][$j][0],"/*"),"*/")));				//保存注释的数据，注释所对应的blockUID为NULL。Array(COMMENT_UID=>Array(COMMENT_UID,NULL,TEXT));
+                  $this->arrCommentsOffset[$strCommentUID]=$m[0][$j][1];											//记录该注释在源代码中的偏移量。Array(COMMENT_UID=>PREG_OFFSET_CAPTURE);
+                   $this->arrCODEDATA[3]=  substr_replace($this->arrCODEDATA[3]," COMMENTS(".$strCommentUID."); ",$m[0][$j][1],strlen($m[0][$j][0])); 	//将源代码中的注释数据替换成伪函数调用。
+               }
+
+               preg_match_all("/(?<!:)\/\/.*$/m",$this->arrCODEDATA[3],$m,PREG_OFFSET_CAPTURE);					//匹配查找注释类型：//
+               $n=count($m[0]);
+               for($j=$n-1;$j>=0;$j--)
+               {
+                  $strCommentUID=UID();
+                  $this->arrComments[$strCommentUID]=Array($strCommentUID,NULL,trim(trim(trim($m[0][$j][0],"/*"),"*/")));	//此时注释所对应的blockID为NULL   
+                  $this->arrCommentsOffset[$strCommentUID]=$m[0][$j][1];
+                  $this->arrCODEDATA[3]=  substr_replace($this->arrCODEDATA[3]," COMMENTS(".$strCommentUID."); ",$m[0][$j][1],strlen($m[0][$j][0]));
+               };
+
+               //print_r($this->arrComments);
+
                /****************************************************************************
 
                   文本代码拆分算法：
 
-                     1.删除注释
+                     1.删除注释(已取消)
                        ------------------------------------------
                          替换前   |  \/*注释*\/  |   //注释\n   |
-                       -----------|--------------|--------------|
+                       ---------- |--------------|--------------|
                          替换后   |              |              |
                        ------------------------------------------
 
@@ -871,9 +993,10 @@ class CToScratch3
 
 
                ****************************************************************************/
-               $strPattern		=Array( '/\/\*.*?\*\//s',  '/(?<!:)\/\/.*$/m');
-               $strReplacement		=Array( '',                ''                );
-               $this->arrCODEDATA[3]	=preg_replace($strPattern,$strReplacement,$this->arrCODEDATA[3]);			//1.删除注释
+
+               //$strPattern		=Array( '/\/\*.*?\*\//s',  '/(?<!:)\/\/.*$/m');
+               //$strReplacement		=Array( '',                ''                );
+               //$this->arrCODEDATA[3]	=preg_replace($strPattern,$strReplacement,$this->arrCODEDATA[3]);			//1.删除注释
 
                $strPattern		=Array( '/\\n\\n/');
                $strReplacement		=Array( "\n\n\n"   );
@@ -1213,7 +1336,7 @@ class CToScratch3
                      |   码    |   }               |   }                    |   }               |
                      |         |   while(1);       |   while(!条件);        |   while(!条件);   |
                      |---------|-------------------|------------------------|-------------------|
-                     |  区 分  |        ↑只有1    |   有条件，有分支代码   |   有条件，无代码  |
+                     |  区 分  |         ↑只有1   |   有条件，有分支代码   |   有条件，无代码  |
                      ---------------------------------------------------------------------------*/
 
                      $arrCodeSection[$nSECTION][] = $strCode;				//填入do
@@ -1309,11 +1432,11 @@ class CToScratch3
                   }
                }
                $this->arrCODEDATA[3]=$arrCodeSection;		//将整段数据装配
-            }//else $i==2
+            }//else $i==3
          }//if($this->arrCODEDATA[$i]!=NULL)
       }//for()
 
-      if(1|DEBUGs) var_dump($this->arrCODEDATA);			//调试用。
+      if(DEBUGs) var_dump($this->arrCODEDATA);			//调试用。
    }
 
 
@@ -1395,9 +1518,9 @@ class CToScratch3
    *************************************************************************************************************************/
    function deal()
    {
-      $arrScratch3Data = Array(Array(),Array(),Array());//存放解析后的数据（适用于所有角色的变量，仅适用于当前角色的变量，积木的JSON数据）
+      $arrScratch3Data = Array(Array(),Array(),Array(),Array());//存放解析后的数据（适用于所有角色的变量，仅适用于当前角色的变量，积木的JSON数据，注释数据）
 
-      foreach($this->arrCODEDATA as $index=>$arrData)	//遍历arrCODEDATA（共3组数据）
+      foreach($this->arrCODEDATA as $index=>$arrData)	//遍历arrCODEDATA（共3组数据需要处理，第4组为注释，需要在3中提前处理）
       {
          switch($index)
          {
@@ -1430,6 +1553,8 @@ class CToScratch3
          case 3:					//类C语言文本代码
             if($arrData=="") break;								//数据为空，不处理
 
+            //$this->UIDS=Array(NULL,UID());//{舍去1}							//每个循环，都是一个独立的代码段，所以每次都需要初始化一下：parent_uid,this_uid
+
             foreach($arrData as $key=>$arrSection)						//$key不连续
             {
                /****************************************************************************
@@ -1452,8 +1577,11 @@ class CToScratch3
                   而又因为第一块积木的parent是null，所以$this->UIDS的第一个数据为NULL。
                   
                ****************************************************************************/
-               $this->UIDS=Array(NULL,UID());							//每个循环，都是一个独立的代码段，所以每次都需要初始化一下：parent_uid,this_uid
                $this->bTOPLEVEL="true";								//只有代码段顶部积木，才能设toplevel为true，否则显示会混乱（出现重复的积木）；另，如果全为false，则会不显示。
+               //if(count($this->UIDS)!=2 || $this->UIDS[0]!=NULL)//{舍去2}	//为了能让comment能够接上来，这个地方不再每次都重新生成数据
+               //{
+                  $this->UIDS=Array(NULL,UID());							//每个循环，都是一个独立的代码段，所以每次都需要初始化一下：parent_uid,this_uid
+               //}
 
                $this->parseSpecialBlocks($arrSection);						//处理被拆分的代码文本数据，处理完的数据直接放在Blockly[0]里
 
@@ -1486,14 +1614,21 @@ class CToScratch3
                      array_push($this->Blockly,$lastBlock);				//即使解析出错，也原样保存，便于后续排错。
                }
             }
-           
             $arrScratch3Data[2]=$this->Blockly;							//用[2]而不是[$index]，会快点？嗯，差异可以忽略不计。
 
             break;
          }
       }
 
-      if(1||DEBUGs){ print_r($this->Blockly);print_r($arrScratch3Data);}				//输出所有积木信息
+      asort($this->arrCommentsOffset);							//对Comments按在源码中出现的顺序进行排序
+      $arrCommentsWithTrueOrder=Array();
+      foreach($this->arrCommentsOffset as $key=>$value)   				//虽然只需要key，但value还是要设定一下。foreach中要注意 as $value  和 as $key=>$value
+      {
+         $arrCommentsWithTrueOrder[]=$this->arrComments[$key];				//偏移量直接用数字而不是key，减少传输数据量。
+      }
+      $arrScratch3Data[3]=json_encode($arrCommentsWithTrueOrder);
+
+      if(DEBUGs){ print_r($this->Blockly);print_r($arrScratch3Data);}			//输出所有积木信息
 
       return $arrScratch3Data;
    }
@@ -1724,8 +1859,7 @@ class CToScratch3
    ******************************************************************************************************************************************************************/
    private function parseSpecialBlocks($arrCode)
    {
-
-print_r($arrCode);
+echo "PARSE SPECIAL BLOCKS\n";
       $nCodeLength=count($arrCode);		//文本代码拆分成数组后的长度
       for($i=0;$i<$nCodeLength;$i++)
       {
@@ -1735,6 +1869,59 @@ print_r($arrCode);
             case "SELFDEFINED_FUNCTION":			//自制积木定义的处理
 
                /***********************************************************************
+                  一个自制积木，至少有两条数据：
+                  1.procedures_definition
+                     积木的定义声明
+                     {
+                         "id": "ID_A8$d_}X]I6I{Pdn[PWy8_DI",
+                         "opcode": "procedures_definition",
+                         "inputs": {
+                             "custom_block": {
+                                 "name": "custom_block",		//自制积木类型
+                                 "block": "ID_.98ja`{}6yEpsqTv$ZXX_DI",	//指向原型数据
+                                 "shadow": "ID_.98ja`{}6yEpsqTv$ZXX_DI"
+                             }
+                         },
+                         "fields": {},
+                         "next": null,
+                         "topLevel": true,
+                         "parent": null,
+                         "shadow": false
+                     }
+
+                  2.procedures_prototype
+                     对积木的参数进行详细的描述
+                     {
+                         "id": "ID_.98ja`{}6yEpsqTv$ZXX_DI",
+                         "opcode": "procedures_prototype",
+                         "inputs": {
+                             "ID_~Uqlx$#FO3YTdi.SRM2._DI": {
+                                 "name": "ID_~Uqlx$#FO3YTdi.SRM2._DI",
+                                 "block": "ID_dt?pKT3CKct#8n561_JV_DI",	//指向可能存在的参数数据
+                                 "shadow": "ID_dt?pKT3CKct#8n561_JV_DI"
+                             }
+                         },
+                         "fields": {},
+                         "next": null,
+                         "topLevel": false,
+                         "parent": "ID_A8$d_}X]I6I{Pdn[PWy8_DI",
+                         "shadow": true,
+                         "mutation": {
+                             "tagName": "mutation",
+                             "children": [],
+                             "proccode": "func %s",				//%s表示参数为字符/数字类型；%b表示参数为布尔值类型。
+                             "argumentids": "[\"ID_~Uqlx$#FO3YTdi.SRM2._DI\"]", //该参数的UID
+                             "argumentnames": "[\"a1\"]",			//该参数的名字
+                             "argumentdefaults": "[\"\"]",			//参数的默认值。布尔值需要设为true或false
+                             "warp": "false"					//是否要求在运行时不刷新，也即是否在运行完整个积木后再更新舞台上的图像数据
+                         }
+                     }
+
+                  3.参数
+                   
+                  ---------------------------------------------------------------------------------------------------------
+
+                  自制积木（自定义函数）数据头结构：
                   array(11)
                   (
                      [0]=> "SELFDEFINED_FUNCTION"
@@ -1759,19 +1946,16 @@ print_r($arrCode);
                array_push($this->UIDS,$thisUID);				//入栈：thisUID
                array_push($this->UIDS,$nextUID);				//入栈：nextUID
 
-               $this->bTOPLEVEL="false";						//防止后续积木的toplevel为true，导致显示异常。
-
+               $this->bTOPLEVEL="false";					//防止后续积木的toplevel为true，导致显示异常。
                $prototypeUID=UID();
 
                //获取函数名
                $strFunctionName=str_replace(" ","",ltrim($arrCode[++$i],"void "));
 
                $this->arrCurrentSDFBlock=$strFunctionName;				//记录当前属于哪个自制积木，方便积木块中的积木使用本地变量
-echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." BEGIN\n";
+
                //解析参数
-               //$strCondition="";
-               //$arrCondition=Array();
-               //条件
+               //自制积木已经在代码初筛阶段就完成了积木结构的解析和定义，所以这里就不需要再次拆解定义头，而专心解析包含的代码。
 
                /***********************************************************************
 
@@ -1784,34 +1968,24 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." BEGIN\n";
 
                /************************************************************************   
                //自制积木的参数格式之前已经解析过，所以这里就不需要处理了。
-               //$nBraceCounter=1;
-               while($i<$nCodeLength-1)	
-               {
-                  //$strCode=$arrCode[++$i];
-                  //if($strCode=="(") $nBraceCounter++;
-                  if($arrCode[++$i]==")") break;//$nBraceCounter--;
-                  //if($nBraceCounter==0) break;
-                  //$strCondition.=$strCode;
-               }
-               //$strCondition.=",";
-
-               //$argCounter=preg_match_all("/((VAR)|(BOOL))\s+([^^]*?),/",$strCondition,$sdf_args);
                ************************************************************************/
 
                /***********************************************************************
+               解析后的自制积木的定义数据（$this->arrSelfDefinedFunctions）：
                Array
                (
                    [func1_a_] => Array
                        (
-                           [0] => func1 %s
-                           [1] => Array
+                           [0] => func1 %s		//自制积木的opcode
+                           [1] => Array			//自制积木的参数
                                (
-                                   [0] => VAR
+                                   [0] => VAR		//VAR为字符和数字，BOOL为布尔型
                                )
                            [2] => Array
                                (
                                    [0] => a
                                )
+                           [3] => 1|0			//运行时是否刷新。1为不刷新。
                        )
                    [func2_b123__c_2_] => Array
                        (
@@ -1826,14 +2000,13 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." BEGIN\n";
                                    [0] => b123
                                    [1] => c_2
                                )
+                           [3] => 1|0
                        )
                )
                ***********************************************************************/
 
                $arrSDFConfig=isset($this->arrSelfDefinedFunctions[$strFunctionName])?$this->arrSelfDefinedFunctions[$strFunctionName]:NULL;
                if($arrSDFConfig==NULL) exit();//数据异常，没有继续的必要了。
-               //echo "SDFConfig\n";
-               print_r($arrSDFConfig);
 
                $proccode    = $arrSDFConfig[0];			//获取已经解析的proccode
                $arrArgTypes = $arrSDFConfig[1];			//获取已经解析的变量类型
@@ -1845,26 +2018,24 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." BEGIN\n";
 
                $nSDFConfigLength=count($arrSDFConfig[1]);//[1]为变量类型；[2]为变量名
 
-               $input_str="";
+               $input_str="";				//构建参数数据
                $arrInputUIDS=Array();
-               $argumentids_str="[";
-               $arguments_str="[";
-               $argumentdefaults="[";
+               $argumentids_str="[";			//构建参数UID
+               $arguments_str="[";			//构建参数名
+               $argumentdefaults="[";			//构建参数默认值
 
                if($nSDFConfigLength>0)	//有参数
                {
-                  //$this->arrSelfDefinedFunctionArgs=Array();//新的自制积木，清零。
-                                                    //自制积木中的参数变量，只有在自制积木定义块中才有效，所以当第二个自制积木出现时，原有参数即刻失效。
-                  //$sdf_args[1] //参数类型
-                  //$sdf_args[4] //参数名
                   for($j=0;$j<$nSDFConfigLength;$j++)		//构建参数积木
                   {
                      //echo "参数定义中";
                      $argChildUIDS=UID();
 
+                     //参数积木数据
+                     //VAR（数字和字符类型）：argument_reporter_string_number
+                     //BOOL（布尔值类型）   ：argument_reporter_boolean
                      array_push($this->Blockly,'{"id": "'.$argChildUIDS.'", "opcode": "'.(($arrArgTypes[$j]=="VAR")?"argument_reporter_string_number":"argument_reporter_boolean").'", "inputs": {}, "fields": { "VALUE": { "name": "VALUE", "value": "'.$arrArgNames[$j].'" }}, "next": null, "topLevel": false, "parent": "'.$prototypeUID.'", "shadow": true }');
 
-                     //$arrInputUIDS[$j]=isset($this->arrSelfDefinedFunctionArgs[$strFunctionName][$arrSDFConfig[2][$i]])?$this->arrSelfDefinedFunctionArgs[$strFunctionName][$arrSDFConfig[2][$j]]:UID();
                      if($j>0)
                      {
                         //$proccode_str.="";
@@ -2875,6 +3046,8 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
             //其他普通无包含关系的积木，在这里处理。
             default:					//其他以“;”结尾的普通函数调用的解析
 
+echo "default\n";
+print_r($this->UIDS);
                $childFunc=Array();
                $nRNCounter=0;
                while( $i<$nCodeLength)			//这里是对整个函数的剥离，所以不用考虑参数的多少，直接以;结束。
@@ -3049,10 +3222,14 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
             }
          }
          $boolWarp=true;
+//echo $strArgumentDefinition;
+//var_dump(strpos($strArgumentDefinition,"true,"));
          if( strpos($strArgumentDefinition,"true,")===false )			//如果这样设置，则：1.false可以省去；2.true为保留字，不允许作为普通变量的值进行传递。实际Scratch3.0也不允许在调用时直接用true作为参数。
          {
             $boolWarp=false;//运行时不刷新
          }
+//var_dump($boolWarp);
+//echo "wwwwwwwwwwwwwwwwwwwwww\n";
 
          $strFunctionName_format=trim(str_replace($arrArgName,$arrArgType,$strFunctionName));				//通过批量替换，生成自制积木的proccode
          $this->arrSelfDefinedFunctions[$strFunctionName]=Array($strFunctionName_format,$sdf_args[1],$sdf_args[4],$boolWarp);	//装配数据
@@ -3106,20 +3283,72 @@ echo "SDFFFFFFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." END \n";
 
       $nFuncLength=count($arrFuncData);				//传入的数组的长度，遍历数组时需要
 
+
+echo "进入后：\n";
+print_r($this->UIDS);
+
       $nextUID=UID();
       $thisUID=array_pop($this->UIDS);            	//之前的nextUID
       $parentUID=array_pop($this->UIDS);		//之前的thisUID
 
-      array_push($this->UIDS,$parentUID);			//存一次thisUID，作为下一个的parentUID
+      array_push($this->UIDS,$parentUID);		//存一次thisUID，作为下一个的parentUID
       array_push($this->UIDS,$thisUID);			//存一次thisUID，作为下一个的parentUID
       array_push($this->UIDS,$nextUID);			//存一次nextUID，作为下一个的thisUID。
 
       $strActuralArg="";
 
-print_r($arrFuncData);
-//echo "66666666666666666666666666666666666666\n";
       switch($arrFuncData[0])
       {
+         case "COMMENTS":
+
+echo "调整后：\n";
+print_r($this->UIDS);
+
+            array_pop($this->UIDS);			//这个nextUID被弃用了。
+            array_pop($this->UIDS);			//丢弃一个thisUID
+            array_pop($this->UIDS);			//丢弃一个parentUID
+            array_push($this->UIDS,$parentUID);		//放入一个parentUID
+            array_push($this->UIDS,$thisUID);		//放入一个thisUID
+                                                        //最终还原成没有进入parseGeneralBlocks的状态。
+                                                        //parseGeneralBlocks在处理实际函数前，要生成并调整UID数据，当前函数不需要这些操作，所以需要回退数据。
+echo "还原后：\n";
+print_r($this->UIDS);
+
+echo "DEALINGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\n";
+print_r($this->UIDS);
+
+echo "\n\ncomment :".$arrFuncData[2]."\n";
+echo "block   :".$parentUID."\n";
+echo "text    :".$this->arrComments[$arrFuncData[2]][2]."\n";
+//echo "nextUID :".$nextUID."\n\n";//这个nextUID被弃用了。
+
+            if($parentUID==NULL)//为空，则再取一次。
+            {
+               $parentUID=array_pop($this->UIDS);
+               array_push($this->UIDS,$parentUID);
+            }
+
+            if(!isset($this->arrCommentsToBlock[$parentUID])) 		//积木没有被设置COMMENT    
+            {
+               echo "未设置过。\n";
+               $this->arrComments[$arrFuncData[2]][1]=$parentUID;       //arrComments的blockUID赋值为积木的parentUID
+               $this->arrCommentsToBlock[$parentUID]=$arrFuncData[2];   //parentUID为积木UID，指向了已经被设置了的C_UID
+            }
+            else							//由于目标积木已经被添加过COMMENT，所以当前的COMMENT需要追加到那个COMMENT中
+            {
+               echo "已设置过。\n";
+               $this->arrComments[$this->arrCommentsToBlock[$parentUID]][2].="\r\n".$this->arrComments[$arrFuncData[2]][2];	//追加COMMENT的文本数据
+               unset($this->arrCommentsOffset[$arrFuncData[2]]);								//删除当前注释的偏移量
+               unset($this->arrComments[$arrFuncData[2]]);									//删除当前注释数据
+            }
+
+echo "注释关联情况：BLOCKID => COMMENTID\n";
+print_r($this->arrCommentsToBlock);
+
+echo "AFTERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n";
+
+            //var_dump($arrFuncData);
+            break;
          //主调函数的处理方法
          //格式：funName(arg);
 
@@ -3364,14 +3593,14 @@ print_r($arrFuncData);
                     )
 
             *****************************************************************************/
-echo "解析后的函数参数：\n";
+//echo "解析后的函数参数：\n";
             print_r($arrArguments);
 //exit;
-print_r($arrFuncData);
+//print_r($arrFuncData);
             if((!isset($arrFuncData[$n])  || $arrFuncData[$n]==";") &&  preg_match_all("/\+|\-|\*|\/|\(|\)/",$arrFuncData[$n],$m)==false && $this->getArgName($arrFuncData[0])!=NULL)			//检测后面是否还有数据，以确认当前获取的是完整数据，此操作补上了之前按括号拆分可能存在的bug。
             {
 
-var_dump($arrFuncData[$n]);
+//var_dump($arrFuncData[$n]);
                $arrBlockArgConfig=$this->getArgName($arrFuncData[0]);			//获取当前积木块的fields和inputs参数的配置信息
 
                $nINPUTS=count($arrBlockArgConfig["inputs"]);				//inputs参数统计
@@ -3390,7 +3619,7 @@ var_dump($arrFuncData[$n]);
                $strFieldsData='';
                if($nFIELDS>0)								//构建fields数据。fields不需要shadow积木。
                {										//注意：fields数据也可能是公式，需要处理。
-echo "FIELDS以后再处理。";
+//echo "FIELDS以后再处理。";
                   //if(
                   $strFIELDS=implode("",$arrArguments[0]);
 
@@ -3419,8 +3648,8 @@ echo "FIELDS以后再处理。";
                   //echo "检查有没有被完全拆开:\n";
                //此时实际还没有IDDI参与进来。
 
-echo "拆分后的参数数据：\n";
-print_r($arrArguments);
+//echo "拆分后的参数数据：\n";
+//print_r($arrArguments);
 
                   //对每个参数进行细分。参数可能是纯数字、字符串、变量和计算表达式
                   $parsedArgData=Array();
@@ -3436,7 +3665,7 @@ print_r($arrArguments);
                         if(!isset($arrArguments[$i+$nFIELDS])) break;
 
                         $strArgument=trim(implode("",$arrArguments[$i+$nFIELDS]));         //这里有问题。
-echo  "\n\n".$i ."参数是 ".$strArgument."\n";
+//echo  "\n\n".$i ."参数是 ".$strArgument."\n";
 
                         echo "解析前的参数 $i :".$strArgument."\n";
                         if(!is_numeric($strArgument))					//非纯数字的参数，利用RPN算法进行分解。
@@ -3444,7 +3673,7 @@ echo  "\n\n".$i ."参数是 ".$strArgument."\n";
                            if(isset($this->arrVariableUIDS[trim($strArgument)]))//in_array(trim($arrLoopCondition),$this->arrVariables) )	//参数是已定义的变量，生成该变量的积木块，此处不需要shadow，shadow由repeat自己生成。
                            {
                               $parsedArgData[$i]=trim($strArgument);
-echo "是变量。"; 
+//echo "是变量。"; 
                            }
                            else if(isset($this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][trim($strArgument)]))
                            {
@@ -3529,25 +3758,12 @@ echo "是变量。";
                      )
 
                   *******************************************************************/
-//echo "+++++++++++++++++\nparsedArgData\n";
-                  print_r($parsedArgData);
-//print_r($arrBlockArgConfig["inputs"]);
 
                }
 
-
-//echo " parent: $parentUID    this: $thisUID  next: $nextUID\n";
                //拼接主积木完整数据
                $strBlock='{"main":"0","id": "'.$thisUID.'","opcode": "'.$arrFuncData[0].'","fields":{'.$strFieldsData.'}, "inputs": {'.$strInputsData.'}, "next": '.($nextUID==NULL?'null':'"'.$nextUID.'"').', "topLevel": '.($parentUID==NULL?'true':'false').', "parent": '.($parentUID==NULL?'null':'"'.$parentUID.'"').', "shadow": false}';	//当bTOPLEVEL为true时，topLevel必为true；否则按元规则处理。
-																		//当bTOPLEVEL为true时，parent必为null；否则按原规则处理。	//这个添加的规则，可以让单独的积木能正确显示。
-
-//echo "-00000000000-------PARENTUID------- $parentUID --------- $arrFuncData[0] ------------2---------\n";
-//var_dump($strFieldsData);
-//echo $strBlock."\n\n";
-            
-
-            
-//echo $strBlock."\n";
+		
                //添加当前积木块数据
                array_push($this->Blockly,$strBlock);
 
@@ -3558,7 +3774,7 @@ echo "是变量。";
 
          default:					//其他特例
 
-//echo "default\n";
+            //echo "default\n";
             /*******************************************************************************************************
 
               自制积木调用
@@ -3655,7 +3871,7 @@ echo "是变量。";
 
                ****************************************************************************************************/
 
-echo "SDFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." CHANGED\n";
+               //echo "SDFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." CHANGED\n";
                //$this->arrCurrentSDFBlock=$strFunctionName;				//当前积木的名字，形如：函数名_变量名1__变量名2_
 											//当arrCurrentSDFBlock非空，表示当前可以用该自制积木里的参数变量，
 											//这种情况一般出现在自定义函数的实现代码中。
@@ -3769,7 +3985,7 @@ echo "SDFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." CHANGED\n";
                          "argumentids": "[\"o/NZni@*?9Q`vIuVZeB;\",\"7]LI!]j_vi+vR%b|CDwX\",\"v_eQ0D.?e!8~K1Ys)n+p\"]",	//已有：$arrArgUIDS
                          "argumentnames": "[\"a\",\"b\",\"c\"]",							//已有：$arrArgNames
                          "argumentdefaults": "[\"\",\"false\",\"\"]",							//需要构造
-                         "warp": "false"										//运行时不刷新
+                         "warp": "false"										//false:运行时刷新  true:运行时不刷新
                      }
 
                    在后续使用这些变量时，需要用到相对应的UID。
@@ -3795,12 +4011,11 @@ echo "SDFFFFFFFFFFFFFFF ".$this->arrCurrentSDFBlock." CHANGED\n";
 
                *******************************************************************************************/
                //$argArr=Array();
-echo "SDF ARGUMENTS\n";
+/*echo "SDF ARGUMENTS\n";
 print_r($arrArgumentsData);
 print_r($arrArgTypes);
-
 print_r($this->arrSelfDefinedFunctionArgs);
-echo $this->arrCurrentSDFBlock;
+echo $this->arrCurrentSDFBlock;*/
 
 
                if(count($arrArgumentsData)>0)
@@ -3958,7 +4173,7 @@ echo $this->arrCurrentSDFBlock;
                      proccode
                ********************************************************/
 
-print_r($this->arrSelfDefinedFunctions);
+               //print_r($this->arrSelfDefinedFunctions);
                if($thisUID=='null')
                {
                   array_push($this->Blockly,'{"id": "'.UID().'","opcode": "procedures_call","inputs": {'.$input_str.'},"fields": {},"next":  '.($nextUID==NULL?'null':"\"".$nextUID."\"").',"topLevel": true,"parent": null,"shadow": false,"mutation": {    "tagName": "mutation",    "children": [],    "proccode": "'.$this->arrSelfDefinedFunctions[$strFunctionName][0].'",    "argumentids": "'.$argumentids_str.'",    "warp": "'.($boolWarp==true?"true":"false").'"}    }');
@@ -4580,7 +4795,8 @@ print_r($this->arrSelfDefinedFunctions);
 //echo "sdfffffffffffffffffff\n";
 //print_r($this->arrSelfDefinedFunctionArgs);
 //print_r($arrArgVal);
-$arrChildShadowUID[$m]=UID();
+
+                        $arrChildShadowUID[$m]=UID();
 
                         array_push($this->Blockly, '{"t":"5","id": "'.$arrChildShadowUID[$m].'","opcode":"argument_reporter_string_number","inputs": {},"fields": {"VALUE": {"name": "VALUE","value": "'.$arrArgVal[$m].'"}},"next": null,"topLevel": false,"parent":  "'.$thisUID.'","shadow":false}');
                         //$arrArgVal[$m]=$this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$arrArgVal[$m]];//UID();//原本传入的是变量名，需要重新生成UID。
@@ -4706,8 +4922,8 @@ $arrChildShadowUID[$m]=UID();
                else //大于、小于、等于、且、或
                {
 
-echo "t12sssssssssssssssssssssss\n";
-print_r($arrArgVal);
+                  //echo "t12sssssssssssssssssssssss\n";
+                  //print_r($arrArgVal);
                   array_push($this->Blockly,'{"t":"12","id": "'.$thisUID.'","opcode": "'.$strOPCODE.'","inputs": {"OPERAND1": {"name": "OPERAND1","block": "'.$arrArgVal[0].'","shadow": '.(($bShadowNeeded)?'"'.$arrChildShadowUID[0].'"':'null').'},"OPERAND2": {"name": "OPERAND2","block": "'.$arrArgVal[1].'","shadow": '.(($bShadowNeeded)?'"'.$arrChildShadowUID[1].'"':'null').'}},"fields": {},"next": null,"topLevel": '.($childBlockParent==NULL?'true':'false').',"parent": '.($childBlockParent==NULL?'null':'"'.$childBlockParent.'"').',"shadow": false}');
                }
             }//for $i
@@ -4793,10 +5009,6 @@ print_r($arrArgVal);
    ************************************************************************************************************************/
    private function parseCalculationExpression($arrChildArgBlockInfo,$arrCalExpData,$parentUID)
    {
-echo "??BUGGGGGGGGGGGGGGGGGGGGG\n";
-echo "CALEXPDATA\n";
-print_r($arrCalExpData);
-echo "']]]";
       /********************************************************************************************************************
 
          本函数主要生成算术计算和函数调用这两类积木。
@@ -4895,8 +5107,8 @@ echo "']]]";
             if(isset($arrCalExpData[$n]))			//直接用isset检测[0]和[1]是否存在。
             {
 
-echo "-------存在--------------$n \n";
-print_r($arrCalExpData[$n]);
+               //echo "-------存在--------------$n \n";
+               //print_r($arrCalExpData[$n]);
 
                $nCEDLength=count($arrCalExpData[$n]);
 //               for($i=0;$i<$nCEDLength;$i++)					//遍历生成每一组数据
@@ -4913,8 +5125,6 @@ print_r($arrCalExpData[$n]);
                                 isset($arrCalExpData[$n][$i][3])?trim($arrCalExpData[$n][$i][3],'"'):NULL	//“不成立”这个积木，只有一个参数。
                   );
 
-echo "ffffffffffffff\n";
-print_r($arrCurrentCalcBlock);
                   /*******************************************************************************************************
 
                      $arrCalExpData[0]的最后一个积木，是所有积木的最底层积木，它的UID需要返回给调用者。
@@ -4983,11 +5193,8 @@ print_r($arrCurrentCalcBlock);
 
                   *********************************************************************************************************/
 
-echo $strOperator;
+                  //echo $strOperator;
                   $arrCalcOptInfo=isset($this->arrCalcFunctionToActuralOpcode[$strOperator])?$this->arrCalcFunctionToActuralOpcode[$strOperator]:NULL;
-echo "这里有问题\n";
-print_r($arrCalcOptInfo);
-
 
                   if($arrCalcOptInfo==NULL) break;					//未定义的运算符，数据错误，终止当前循环
 
@@ -5006,12 +5213,7 @@ print_r($arrCalcOptInfo);
 
                   *********************************************************************************************************/
                   $argInfo=isset($this->arrArgumentConfig[$arrCalcOptInfo[0]])?$this->arrArgumentConfig[$arrCalcOptInfo[0]]:NULL;//当前如果不是运算符而是函数调用，则需要获取函数的配置信息
-echo "9999999999999999999999999999999\n";
 
-print_r($arrCalcOptInfo);
-print_r($argInfo);
-print_r($arrArgVal);
-print_r($this->arrBlockToParent);
                   $nInputsLength=count($argInfo["inputs"]);				//inputs参数个数
                   $arrChildArgBlockInfos=Array();
                   if($nInputsLength>0)							//函数中调用函数，需要重新获取函数的配置数据
@@ -5115,9 +5317,6 @@ print_r($this->arrBlockToParent);
                      //$arrChildArgBlockInfo[3]=$argInfo["inputs"][$i][3];			//参数默认值
 
                      $arrChildArgBlockInfos=$argInfo["inputs"];
-
-print_r($arrChildArgBlockInfos);
-echo "data\n";
                   }
                   else									//无inputs参数
                   {
@@ -5202,34 +5401,28 @@ echo "data\n";
 
                            else//啥也不是时，可能是文本字符串。
                            {
-echo "可能是文本参数x：\n";
-print_r($arrArgVal);
+                              //echo "可能是文本参数x：\n";
                               //if(strpos($arrArgVal[$m],'"')===FALSE)		//没有被双引号括起来，就尝试按照计算表达式来处理一下
                               if($arrArgVal[$m][0]!='"')		//没有被双引号括起来，就尝试按照计算表达式来处理一下
                               {
-echo "继续解构2。";
+                                 //echo "继续解构2。";
                                  $arrLoopCondition=$this->rpn_calc->init($arrArgVal[$m]);
                                  if($arrLoopCondition===TRUE)					//拆分成功
                                  {
                                     $arrLoopCondition=$this->rpn_calc->toScratchJSON();
-                                    echo "条件结果：";
-                                    print_r($arrLoopCondition);
+                                    //echo "条件结果：";
+                                    //print_r($arrLoopCondition);
 
                                     $nLCLength=count($arrLoopCondition[0]);
 
                                     $arrChildUIDX[$m]=$this->parseCalculationExpression(Array("NUM","math_number","NUM"),$arrLoopCondition,$thisUID);//$arrLoopCondition,NULL);
 
-//echo "this UID".$thisUID."\n";
-//echo "UID child:\n";
-print_r($this->Blockly);
                                     //print_r($arrChildUIDX);
                                     $arrArgBlockUID[$m]=$arrArgBlockUID[$m]=$arrChildUIDX[$m][0];
                                     $childBlockParent=$parentUID;
 
-//这里应该要保存一份对应关系的。
+                                    //这里应该要保存一份对应关系的。
                                     $this->arrBlockToParent[$arrChildUIDX[$m][0]]=$thisUID;
-echo "拆分成功：\n";
-print_r($arrArgVal);
 
                                     //这个是shadow，要补上。
                                     array_push($this->Blockly, '{"d":"x8","id":"'.$arrArgShadowUID[$m].'","opcode": "'.$arrChildArgBlockInfos[$m][1].'","inputs": {},"fields": {"TEXT": {"name": "TEXT","id":"'.$arrChildUIDX[$m][0].'","value": "'.trim($arrArgVal[$m],'"').'"}},"next": null,"topLevel":true,"parent":null,"shadow":true}');//"topLevel": '.($thisUID==NULL?'true':'false').',"parent":'.($thisUID==NULL?'null':'"'.$thisUID.'"').',"shadow":false}');//"parent": "'.$thisUID.'","shadow": true}');
@@ -5351,7 +5544,6 @@ print_r($arrArgVal);
       else							//如果$arrCalExpData非数组，则它就是一个普通的常量/变量
       {
          $arrCalExpData2=trim($arrCalExpData,'"');
-print_r($arrCalExpData);
 
          if(isset($this->arrVariableUIDS[$arrCalExpData]))//in_array($arrCalExpData,$this->arrVariables))		//对变量直接引用
          {
@@ -5359,7 +5551,7 @@ print_r($arrCalExpData);
             //变量的主积木block，opcode是“data_variable”。
             array_push($this->Blockly, '{"d":"14","id": "'.$arrChildBlockUID[0].'","opcode": "data_variable","inputs": {},"fields": {"VARIABLE": {"name": "VARIABLE","id": "'.$this->arrVariableUIDS[$arrCalExpData].'","value": "'.$arrCalExpData2.'","variableType": ""}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": false}');
             //默认值积木shadow，opcode从ArgInfo里获取。
-//这里不需要shadow了？？？？？
+            //这里不需要shadow了？？？？？
             //array_push($this->Blockly, '{"d":"15","id": "'.$arrChildBlockUID[1].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "10"}},"next": null,"topLevel": false,"parent1": null,"shadow": true}');//"parent": "'.$parentUID.'","shadow": true}');
          }
          else if(isset($this->arrSelfDefinedFunctionArgs[$this->arrCurrentSDFBlock][$arrCalExpData]))	//对自制积木中的本地变量直接引用
@@ -5378,14 +5570,8 @@ print_r($arrCalExpData);
             else
                $arrCalExpData=$arrCalExpData2;
 
-echo "dddddddd:";
-print_r($arrCalExpData);
-
-            print_r($arrChildArgBlockInfo);
             //block
             array_push($this->Blockly, '{"d":"18","id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrCalExpData.'"'.(isset($arrChildArgBlockInfo[4])?' , "variableType": "broadcast_msg"':'').'}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
-
-//            array_push($this->Blockly, '{"d":"18","id": "'.$arrChildBlockUID[0].'", "opcode": "'.$arrChildArgBlockInfo[1].'","inputs": {},"fields": {"'.$arrChildArgBlockInfo[2].'": {"name": "'.$arrChildArgBlockInfo[2].'","value": "'.$arrCalExpData.'"}},"next": null,"topLevel": false,"parent": "'.$parentUID.'","shadow": true}');
 
             $arrChildBlockUID[1]=NULL;
          }
@@ -5410,4 +5596,3 @@ print_r($arrCalExpData);
    }
 }
 ?>
-
