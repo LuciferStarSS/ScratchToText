@@ -1418,8 +1418,10 @@ print_r($Block);
 
          case "procedures_definition":						//自制积木定义
 
+            $pdID=$Block->{'id'};						//保存procedures_definition的BlockID，以便获取Comments
+
             $prototypeBlockID=$Block->{"inputs"}->{"custom_block"}->{'block'};
-            $Block=$this->Blocks->{$prototypeBlockID}  ;
+            $Block=$this->Blocks->{$prototypeBlockID}  ;			//procedures_definition的Block在这里被覆盖为原型定义的Block了。
             $arguments=json_decode($Block->{"mutation"}->{"argumentnames"});
 
             $prefix = '_';
@@ -1474,7 +1476,7 @@ print_r($Block);
                //   $this->codeInC[$this->currentType][count( $this->codeInC[$this->currentType])-1]=' ';
             }
 
-            $this->codeInC[$this->currentType][]= "$strWarp ){\n";			//运行时刷不刷新，控制在这里。
+            $this->codeInC[$this->currentType][]= "$strWarp ){".$this->getComments($pdID)."\n";			//运行时刷不刷新，控制在这里。
 
             $this->nLeftPadding++;	//控制括号。这个结构类似于HATS
 
